@@ -13,6 +13,5 @@
     <orderEntry type="module" module-name="jscenegraph" />
     <orderEntry type="module" module-name="lwjgl-utils" />
     <orderEntry type="module" module-name="vk-bootstrap" />
-    <orderEntry type="module" module-name="lwjgl-opengl" />
   </component>
 </module>

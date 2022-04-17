@@ -11,6 +11,5 @@
     <orderEntry type="module" module-name="org.lwjglx" />
     <orderEntry type="module" module-name="org.lwjglx" />
     <orderEntry type="module" module-name="vk-bootstrap" />
-    <orderEntry type="module" module-name="lwjgl-opengl" />
   </component>
 </module>

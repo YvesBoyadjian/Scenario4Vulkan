@@ -7,7 +7,6 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="vk-bootstrap" />
-        <module name="lwjgl-opengl" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>

@@ -9,19 +9,31 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl:3.3.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-assimp:3.3.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-glfw:3.3.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-openal:3.3.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-stb:3.3.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-vma:3.3.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-vulkan:3.3.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl:natives-windows:3.3.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-assimp:natives-windows:3.3.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-glfw:natives-windows:3.3.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-openal:natives-windows:3.3.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-stb:natives-windows:3.3.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-vma:natives-windows:3.3.0-SNAPSHOT" level="project" />
-    <orderEntry type="library" exported="" name="Maven: org.joml:joml:1.10.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-assimp:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-glfw:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-jawt:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-meshoptimizer:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-openal:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-opengl:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-opengles:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-shaderc:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-stb:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-vma:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-vulkan:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-xxhash:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl:natives-windows:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-assimp:natives-windows:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-glfw:natives-windows:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-meshoptimizer:natives-windows:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-openal:natives-windows:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-opengl:natives-windows:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-opengles:natives-windows:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-shaderc:natives-windows:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-stb:natives-windows:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-vma:natives-windows:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjgl:lwjgl-xxhash:natives-windows:3.3.1" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.joml:joml:1.10.4" level="project" />
+    <orderEntry type="library" exported="" name="Maven: org.lwjglx:lwjgl3-awt:0.1.8" level="project" />
   </component>
 </module>
