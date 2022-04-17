@@ -1,5 +1,5 @@
-# Koin3D
-Koin3D, a java port of Coin3D with LWJGL
+# Scenario4Vulkan
+Scenario4Vulkan, a java port of Coin3D using Vulkan with LWJGL
 
 Three viewers are available :
 - jsceneviewer : As its name does not say, this is an embeddable SWT/Eclipse viewer
