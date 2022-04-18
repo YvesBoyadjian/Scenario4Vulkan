@@ -504,7 +504,7 @@ public class VkBootstrap {
     // Finds the first queue which supports the desired operations. Returns QUEUE_INDEX_MAX_VALUE if none is found
     /*931*/ public static int get_first_queue_index(final List<VkQueueFamilyProperties> families, /*VkQueueFlags*/int desired_flags) {
         for (int i = 0; i < (int)(families.size()); i++) {
-            if ((families.get(i).queueFlags() & desired_flags) != 0) return i;
+            if ((families.get(i).queueFlags() & desired_flags) == desired_flags) return i;
         }
         return QUEUE_INDEX_MAX_VALUE;
     }
@@ -517,8 +517,9 @@ public class VkBootstrap {
                                       /*VkQueueFlags*/int undesired_flags) {
         int index = QUEUE_INDEX_MAX_VALUE;
         for (int i = 0; i < (int)(families.size()); i++) {
-            if ((families.get(i).queueFlags() & desired_flags)!=0 && ((families.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) == 0)) {
-                if ((families.get(i).queueFlags() & undesired_flags) == 0) {
+            final int families_i_queue_flags = families.get(i).queueFlags();
+            if ((families_i_queue_flags & desired_flags) == desired_flags  && ((families_i_queue_flags & VK_QUEUE_GRAPHICS_BIT) == 0)) {
+                if ((families_i_queue_flags & undesired_flags) == 0) {
                     return i;
                 } else {
                     index = i;
@@ -534,8 +535,12 @@ public class VkBootstrap {
             /*VkQueueFlags*/int desired_flags,
             /*VkQueueFlags*/int undesired_flags) {
         for (int i = 0; i < (int)(families.size()); i++) {
-            if ((families.get(i).queueFlags() & desired_flags)!=0 && (families.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) == 0 &&
-                    (families.get(i).queueFlags() & undesired_flags) == 0)
+            final int families_i_queue_flags = families.get(i).queueFlags();
+            if (
+                    (families_i_queue_flags & desired_flags) == desired_flags
+                            && (families_i_queue_flags & VK_QUEUE_GRAPHICS_BIT) == 0
+                            && (families_i_queue_flags & undesired_flags) == 0
+            )
                 return i;
         }
         return QUEUE_INDEX_MAX_VALUE;
