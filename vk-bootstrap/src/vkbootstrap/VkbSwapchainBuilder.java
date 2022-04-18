@@ -183,6 +183,10 @@ public class VkbSwapchainBuilder {
     }
 
     /*1876*/ void add_desired_formats(List<VkSurfaceFormatKHR> formats) {
+        VkSurfaceFormatKHR fmt0 = VkSurfaceFormatKHR.create();
+        Port.UNSAFE.putInt(null, fmt0.address() + VkSurfaceFormatKHR.FORMAT, VK_FORMAT_A2B10G10R10_UNORM_PACK32);
+        Port.UNSAFE.putInt(null, fmt0.address() + VkSurfaceFormatKHR.COLORSPACE, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+        formats.add( /*{ VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR }*/fmt0);
         VkSurfaceFormatKHR fmt1 = VkSurfaceFormatKHR.create();
         Port.UNSAFE.putInt(null, fmt1.address() + VkSurfaceFormatKHR.FORMAT, VK_FORMAT_B8G8R8A8_SRGB);
         Port.UNSAFE.putInt(null, fmt1.address() + VkSurfaceFormatKHR.COLORSPACE, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
