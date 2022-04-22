@@ -1,14 +1,14 @@
 package org.lwjgl.opengl.awt;
 
-import java.awt.AWTException;
-import java.awt.Canvas;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.util.concurrent.*;
-
 import org.lwjgl.awthacks.NonClearGraphics;
 import org.lwjgl.awthacks.NonClearGraphics2D;
 import org.lwjgl.system.Platform;
+
+import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
+import java.util.concurrent.Callable;
 
 /**
  * An AWT {@link Canvas} that supports to be drawn on using OpenGL.
@@ -25,6 +25,8 @@ public abstract class AWTGLCanvas extends Canvas {
             return new PlatformWin32GLCanvas();
         case LINUX:
             return new PlatformLinuxGLCanvas();
+        case MACOSX:
+            return new PlatformMacOSXGLCanvas();
         default:
             throw new UnsupportedOperationException("Platform " + Platform.get() + " not yet supported");
         }
@@ -34,11 +36,29 @@ public abstract class AWTGLCanvas extends Canvas {
     protected final GLData data;
     protected final GLData effective = new GLData();
     protected boolean initCalled;
+    private int framebufferWidth, framebufferHeight;
+    private final ComponentListener listener = new ComponentAdapter() {
+        @Override
+        public void componentResized(ComponentEvent e) {
+            java.awt.geom.AffineTransform t = AWTGLCanvas.this.getGraphicsConfiguration().getDefaultTransform();
+            float sx = (float) t.getScaleX(), sy = (float) t.getScaleY();
+            AWTGLCanvas.this.framebufferWidth = (int) (getWidth() * sx);
+            AWTGLCanvas.this.framebufferHeight = (int) (getHeight() * sy);
+        }
+    };
 
     @Override
     public void removeNotify() {
         super.removeNotify();
+        // prepare for a possible re-adding
+        context = 0;
+        initCalled = false;
         disposeCanvas();
+    }
+
+    @Override
+    public synchronized void addComponentListener(ComponentListener l) {
+        super.addComponentListener(l);
     }
 
     public void disposeCanvas() {
@@ -46,6 +66,7 @@ public abstract class AWTGLCanvas extends Canvas {
     }
     protected AWTGLCanvas(GLData data) {
         this.data = data;
+        this.addComponentListener(listener);
     }
 
     protected AWTGLCanvas() {
@@ -117,6 +138,14 @@ public abstract class AWTGLCanvas extends Canvas {
      * Will be called whenever the {@link Canvas} needs to paint itself.
      */
     public abstract void paintGL();
+
+    public int getFramebufferWidth() {
+        return framebufferWidth;
+    }
+
+    public int getFramebufferHeight() {
+        return framebufferHeight;
+    }
 
     public final void swapBuffers() {
         platformCanvas.swapBuffers();

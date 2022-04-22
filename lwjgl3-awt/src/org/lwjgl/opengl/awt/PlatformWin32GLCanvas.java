@@ -1,56 +1,29 @@
 package org.lwjgl.opengl.awt;
 
-import static org.lwjgl.system.MemoryUtil.NULL;
-import static org.lwjgl.system.jawt.JAWTFunctions.*;
-import static org.lwjgl.system.windows.WindowsLibrary.HINSTANCE;
-import static org.lwjgl.opengl.awt.GLUtil.*;
-
-import java.awt.AWTException;
-import java.awt.Canvas;
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.ARBMultisample;
-import org.lwjgl.opengl.ARBRobustness;
-import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL30;
-import org.lwjgl.opengl.GL32;
-import org.lwjgl.opengl.GL43;
-import org.lwjgl.opengl.NVMultisampleCoverage;
-import org.lwjgl.opengl.WGL;
-import org.lwjgl.opengl.WGLARBContextFlushControl;
-import org.lwjgl.opengl.WGLARBCreateContext;
-import org.lwjgl.opengl.WGLARBCreateContextProfile;
-import org.lwjgl.opengl.WGLARBCreateContextRobustness;
-import org.lwjgl.opengl.WGLARBMultisample;
-import org.lwjgl.opengl.WGLARBPixelFormat;
-import org.lwjgl.opengl.WGLARBPixelFormatFloat;
-import org.lwjgl.opengl.WGLARBRobustnessApplicationIsolation;
-import org.lwjgl.opengl.WGLEXTCreateContextES2Profile;
-import org.lwjgl.opengl.WGLEXTFramebufferSRGB;
-import org.lwjgl.opengl.WGLNVMultisampleCoverage;
+import org.lwjgl.opengl.*;
 import org.lwjgl.opengl.awt.GLData.API;
 import org.lwjgl.opengl.awt.GLData.Profile;
 import org.lwjgl.opengl.awt.GLData.ReleaseBehavior;
-import org.lwjgl.system.APIUtil;
+import org.lwjgl.system.*;
 import org.lwjgl.system.APIUtil.APIVersion;
-import org.lwjgl.system.Checks;
-import org.lwjgl.system.JNI;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.jawt.JAWT;
 import org.lwjgl.system.jawt.JAWTDrawingSurface;
 import org.lwjgl.system.jawt.JAWTDrawingSurfaceInfo;
 import org.lwjgl.system.jawt.JAWTWin32DrawingSurfaceInfo;
-import org.lwjgl.system.windows.GDI32;
-import org.lwjgl.system.windows.PIXELFORMATDESCRIPTOR;
-import org.lwjgl.system.windows.User32;
-import org.lwjgl.system.windows.WNDCLASSEX;
-import org.lwjgl.system.windows.WindowProc;
+import org.lwjgl.system.windows.*;
+
+import java.awt.*;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.lwjgl.opengl.awt.GLUtil.*;
+import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.system.jawt.JAWTFunctions.*;
+import static org.lwjgl.system.windows.WindowsLibrary.HINSTANCE;
 
 /**
  * Windows-specific implementation of {@link PlatformGLCanvas}.
@@ -176,7 +149,7 @@ public class PlatformWin32GLCanvas implements PlatformGLCanvas {
         validateAttributes(attribs);
 
         // Find this exact pixel format, though for now without multisampling. This comes later!
-        PIXELFORMATDESCRIPTOR pfd = PIXELFORMATDESCRIPTOR.callocStack(stack);
+        PIXELFORMATDESCRIPTOR pfd = PIXELFORMATDESCRIPTOR.calloc(stack);
         pfd.nSize((short) PIXELFORMATDESCRIPTOR.SIZEOF);
         pfd.nVersion((short) 1); // this should always be 1
         pfd.dwLayerMask(GDI32.PFD_MAIN_PLANE);
@@ -230,7 +203,7 @@ public class PlatformWin32GLCanvas implements PlatformGLCanvas {
         }
 
         // Query supported WGL extensions
-        String wglExtensions = null;
+        String wglExtensions;
         long wglGetExtensionsStringARBAddr = WGL.wglGetProcAddress("wglGetExtensionsStringARB");
         if (wglGetExtensionsStringARBAddr != 0L) {
             long str = JNI.callPP(hDCdummy, wglGetExtensionsStringARBAddr);
@@ -254,10 +227,8 @@ public class PlatformWin32GLCanvas implements PlatformGLCanvas {
             }
         }
         String[] splitted = wglExtensions.split(" ");
-        Set<String> wglExtensionsList = new HashSet<String>(splitted.length);
-        for (String str : splitted) {
-            wglExtensionsList.add(str);
-        }
+        Set<String> wglExtensionsList = new HashSet<>(splitted.length);
+        wglExtensionsList.addAll(Arrays.asList(splitted));
         success = User32.ReleaseDC(dummyWindowHandle, hDCdummy);
         if (!success) {
             WGL.wglDeleteContext(dummyContext);
@@ -682,12 +653,11 @@ public class PlatformWin32GLCanvas implements PlatformGLCanvas {
             APIVersion version = APIUtil.apiParseVersion(MemoryUtil.memUTF8(Checks.check(JNI.callP(GL11.GL_VERSION, getString))));
             effective.majorVersion = version.major;
             effective.minorVersion = version.minor;
+        } else if (attribs.api == API.GLES) {
+            APIVersion version = APIUtil.apiParseVersion(MemoryUtil.memUTF8(Checks.check(JNI.callP(GL11.GL_VERSION, getString))));
+            effective.majorVersion = version.major;
+            effective.minorVersion = version.minor;
         }
-//        else if (attribs.api == API.GLES) { YB TODO
-//            APIVersion version = APIUtil.apiParseVersion(MemoryUtil.memUTF8(Checks.check(JNI.callP(GL11.GL_VERSION, getString))), "OpenGL ES");
-//            effective.majorVersion = version.major;
-//            effective.minorVersion = version.minor;
-//        }
         if (attribs.api == API.GL && atLeast32(effective.majorVersion, effective.minorVersion)) {
             JNI.callPV(GL32.GL_CONTEXT_PROFILE_MASK, bufferAddr, getInteger);
             int effectiveProfileMask = MemoryUtil.memGetInt(bufferAddr);
@@ -807,8 +777,10 @@ public class PlatformWin32GLCanvas implements PlatformGLCanvas {
 
     @Override
     public void dispose() {
-        JAWT_FreeDrawingSurface(this.ds, awt.FreeDrawingSurface());
-        this.ds = null;
+        if (this.ds != null) {
+            JAWT_FreeDrawingSurface(this.ds, awt.FreeDrawingSurface());
+            this.ds = null;
+        }
     }
 
 }
