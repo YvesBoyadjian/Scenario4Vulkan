@@ -68,4 +68,8 @@ public class VkbSwapchain {
             vulkan_functions().fp_vkDestroyImageView.invoke(device, image_view, allocation_callbacks);
         }
     }
+
+    public void destroy_image_view(long image_view) {
+        vulkan_functions().fp_vkDestroyImageView.invoke(device, image_view, allocation_callbacks);
+    }
 }

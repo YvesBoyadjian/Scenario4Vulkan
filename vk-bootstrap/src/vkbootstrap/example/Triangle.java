@@ -14,6 +14,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
@@ -365,14 +366,22 @@ public class Triangle {
     }
 
     static int create_framebuffers (final Init init, final RenderData data) {
-        data.swapchain_images.clear(); data.swapchain_images.addAll(init.swapchain.get_images ().value ());
-        data.swapchain_image_views.clear(); data.swapchain_image_views.addAll( init.swapchain.get_image_views ().value ());
+        data.image_datas.clear();
+        List<Long> scis = init.swapchain.get_images ().value ();
+
+        for(int i=0; i<scis.size();i++) {
+            data.image_datas.add(new ImageData(scis.get(i)));
+        }
+
+        List<Long> ivs = init.swapchain.get_image_views ().value();
+        for(int i=0; i<ivs.size();i++) {
+            data.image_datas.get(i).setSwapchainImageView(ivs.get(i));
+        }
 
         //data.framebuffers.resize (data.swapchain_image_views.size ()); java port
-        data.framebuffers.clear();
 
-        for (int i = 0; i < data.swapchain_image_views.size (); i++) {
-            /*VkImageView*/long[] attachments = { data.swapchain_image_views.get(i) };
+        for (int i = 0; i < data.image_datas.size (); i++) {
+            /*VkImageView*/long[] attachments = { data.image_datas.get(i).swapchain_image_view };
 
             final VkFramebufferCreateInfo framebuffer_info = VkFramebufferCreateInfo.create();
             framebuffer_info.sType( VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
@@ -388,7 +397,7 @@ public class Triangle {
             if (init.arrow_operator().vkCreateFramebuffer.invoke (init.device.device[0], framebuffer_info, null, p_framebuffer) != VK_SUCCESS) {
                 return -1; // failed to create framebuffer
             }
-            data.framebuffers.add(p_framebuffer[0]);
+            data.image_datas.get(i).setFrameBuffer(p_framebuffer[0]);
         }
         return 0;
     }
@@ -409,27 +418,31 @@ public class Triangle {
         //data.command_buffers.resize (data.framebuffers.size ()); java port
 
         final VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.create();
-        allocInfo.sType( VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-        allocInfo.commandPool( data.command_pool[0]);
-        allocInfo.level( VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-        allocInfo.commandBufferCount( (int)/*data.command_buffers.size ()*/data.framebuffers.size ()); // java port
+        allocInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+        allocInfo.commandPool(data.command_pool[0]);
+        allocInfo.level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        allocInfo.commandBufferCount((int)/*data.command_buffers.size ()*/data.image_datas.size()); // java port
 
-        if (init.arrow_operator().vkAllocateCommandBuffers.invoke (init.device.device[0], allocInfo, data.command_buffers, data.framebuffers.size ()) != VK_SUCCESS) {
+        final List<VkCommandBuffer> commandBuffers = new ArrayList<>();
+        if (init.arrow_operator().vkAllocateCommandBuffers.invoke(init.device.device[0], allocInfo, commandBuffers, data.image_datas.size()) != VK_SUCCESS) {
             return -1; // failed to allocate command buffers;
         }
+        for (int i = 0; i < commandBuffers.size(); i++) {
+            data.image_datas.get(i).setCommandbuffer(commandBuffers.get(i));
+        }
 
-        for (int i = 0; i < data.command_buffers.size (); i++) {
+        for (int i = 0; i < data.image_datas.size (); i++) {
             final VkCommandBufferBeginInfo begin_info = VkCommandBufferBeginInfo.create();
             begin_info.sType( VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
 
-            if (init.arrow_operator().vkBeginCommandBuffer.invoke (data.command_buffers.get(i), begin_info) != VK_SUCCESS) {
+            if (init.arrow_operator().vkBeginCommandBuffer.invoke (data.image_datas.get(i).command_buffer, begin_info) != VK_SUCCESS) {
                 return -1; // failed to begin recording command buffer
             }
 
             final VkRenderPassBeginInfo render_pass_info = VkRenderPassBeginInfo.create();
             render_pass_info.sType( VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
             render_pass_info.renderPass( data.render_pass[0]);
-            render_pass_info.framebuffer( data.framebuffers.get(i));
+            render_pass_info.framebuffer( data.image_datas.get(i).framebuffer);
             VkOffset2D dummy = VkOffset2D.create();dummy.x( 0); dummy.y( 0);
             render_pass_info.renderArea().offset( dummy );
             render_pass_info.renderArea().extent( init.swapchain.extent);
@@ -458,18 +471,18 @@ public class Triangle {
             scissor.get(0).offset( dummy3);
             scissor.get(0).extent( init.swapchain.extent);
 
-            init.arrow_operator().vkCmdSetViewport.invoke (data.command_buffers.get(i), 0, /*1,*/ viewport);
-            init.arrow_operator().vkCmdSetScissor.invoke (data.command_buffers.get(i), 0, /*1,*/ scissor);
+            init.arrow_operator().vkCmdSetViewport.invoke (data.image_datas.get(i).command_buffer, 0, /*1,*/ viewport);
+            init.arrow_operator().vkCmdSetScissor.invoke (data.image_datas.get(i).command_buffer, 0, /*1,*/ scissor);
 
-            init.arrow_operator().vkCmdBeginRenderPass.invoke (data.command_buffers.get(i), render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+            init.arrow_operator().vkCmdBeginRenderPass.invoke (data.image_datas.get(i).command_buffer, render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-            init.arrow_operator().vkCmdBindPipeline.invoke (data.command_buffers.get(i), VK_PIPELINE_BIND_POINT_GRAPHICS, data.graphics_pipeline[0]);
+            init.arrow_operator().vkCmdBindPipeline.invoke (data.image_datas.get(i).command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, data.graphics_pipeline[0]);
 
-            init.arrow_operator().vkCmdDraw.invoke (data.command_buffers.get(i), 3, 1, 0, 0);
+            init.arrow_operator().vkCmdDraw.invoke (data.image_datas.get(i).command_buffer, 3, 1, 0, 0);
 
-            init.arrow_operator().vkCmdEndRenderPass.invoke (data.command_buffers.get(i));
+            init.arrow_operator().vkCmdEndRenderPass.invoke (data.image_datas.get(i).command_buffer);
 
-            if (init.arrow_operator().vkEndCommandBuffer.invoke (data.command_buffers.get(i)) != VK_SUCCESS) {
+            if (init.arrow_operator().vkEndCommandBuffer.invoke (data.image_datas.get(i).command_buffer) != VK_SUCCESS) {
                 System.out.println( "failed to record command buffer");
                 return -1; // failed to record command buffer!
             }
@@ -506,11 +519,13 @@ public class Triangle {
 
         init.arrow_operator().vkDestroyCommandPool.invoke (init.device.device[0], data.command_pool[0], null);
 
-        for (var framebuffer : data.framebuffers) {
-            init.arrow_operator().vkDestroyFramebuffer.invoke (init.device.device[0], framebuffer, null);
+        for (var image_data : data.image_datas) {
+            init.arrow_operator().vkDestroyFramebuffer.invoke (init.device.device[0], image_data.framebuffer, null);
         }
 
-        init.swapchain.destroy_image_views (data.swapchain_image_views);
+        for(ImageData imageData : data.image_datas) {
+            init.swapchain.destroy_image_view(imageData.swapchain_image_view);
+        }
 
         if (0 != create_swapchain (init)) return -1;
         if (0 != create_framebuffers (init, data)) return -1;
@@ -554,7 +569,7 @@ public class Triangle {
         submitInfo.pWaitDstStageMask( wait_stages);
 
         //submitInfo.commandBufferCount( 1); java port
-        PointerBuffer pCommandBuffers = memAllocPointer(1); pCommandBuffers.put(0,data.command_buffers.get(image_index[0]).address());
+        PointerBuffer pCommandBuffers = memAllocPointer(1); pCommandBuffers.put(0,data.image_datas.get(image_index[0]).command_buffer.address());
         submitInfo.pCommandBuffers( pCommandBuffers);
 
         LongBuffer /*VkSemaphore*/ signal_semaphores= memAllocLong(1); signal_semaphores.put(0, data.finished_semaphore.get((int)data.current_frame)[0] );
@@ -603,15 +618,17 @@ public class Triangle {
 
         init.arrow_operator().vkDestroyCommandPool.invoke (init.device.device[0], data.command_pool[0], null);
 
-        for (var framebuffer : data.framebuffers) {
-            init.arrow_operator().vkDestroyFramebuffer.invoke (init.device.device[0], framebuffer, null);
+        for (var image_data : data.image_datas) {
+            init.arrow_operator().vkDestroyFramebuffer.invoke (init.device.device[0], image_data.framebuffer, null);
         }
 
         init.arrow_operator().vkDestroyPipeline.invoke (init.device.device[0], data.graphics_pipeline[0], null);
         init.arrow_operator().vkDestroyPipelineLayout.invoke (init.device.device[0], data.pipeline_layout[0], null);
         init.arrow_operator().vkDestroyRenderPass.invoke (init.device.device[0], data.render_pass[0], null);
 
-        init.swapchain.destroy_image_views (data.swapchain_image_views);
+        for(ImageData imageData : data.image_datas) {
+            init.swapchain.destroy_image_view(imageData.swapchain_image_view);
+        }
 
         destroy_swapchain (init.swapchain);
         destroy_device (init.device);
