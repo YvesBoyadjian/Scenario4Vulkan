@@ -21,6 +21,5 @@ public class RenderData {
     public final List</*VkSemaphore*/long[]> available_semaphores = new ArrayList<>();
     public final List</*VkSemaphore*/long[]> finished_semaphore = new ArrayList<>();
     public final List</*VkFence*/long[]> in_flight_fences = new ArrayList<>();
-    public final List</*VkFence*/long[]> image_in_flight = new ArrayList<>();
     public long current_frame = 0;
 }

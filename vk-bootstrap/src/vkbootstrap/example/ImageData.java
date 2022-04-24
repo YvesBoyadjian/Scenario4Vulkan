@@ -10,6 +10,7 @@ public class ImageData {
     public long swapchain_image_view;
     public long framebuffer;
     public VkCommandBuffer command_buffer;
+    public final long[] image_in_flight = new long[1];
 
     public ImageData(long swapchain_image) {
         this.swapchain_image = swapchain_image;
