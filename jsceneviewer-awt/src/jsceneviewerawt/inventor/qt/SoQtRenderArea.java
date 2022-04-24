@@ -42,6 +42,7 @@
 
 package jsceneviewerawt.inventor.qt;
 
+import jsceneviewerawt.VulkanState;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.awt.GLData;
 
@@ -52,6 +53,9 @@ import jscenegraph.database.inventor.events.SoEvent;
 import jscenegraph.database.inventor.misc.SoState;
 import jscenegraph.port.Ctx;
 import jscenegraph.port.GLXContext;
+import org.lwjgl.vulkan.VKCapabilitiesDevice;
+import org.lwjgl.vulkan.awt.VKData;
+import vulkanguide.VulkanEngine;
 
 import java.awt.*;
 import java.awt.event.ComponentEvent;
@@ -61,6 +65,11 @@ import java.awt.event.ComponentEvent;
  *
  */
 public class SoQtRenderArea extends SoQtGLWidget {
+
+	public enum API {
+		OpenGL,
+		Vulkan
+	}
 	
 	private final SoQtSceneHandler soQtSceneHandler = new SoQtSceneHandler(this) {
 		
@@ -80,7 +89,7 @@ public class SoQtRenderArea extends SoQtGLWidget {
 	      //#endif
 	          }
 	    }
-	    protected Component getDeviceWidget() { return getGLWidget(); }
+	    protected Component getDeviceWidget() { return (Canvas)getGLWidget(); }
 	    protected boolean isSceneVisible() {
 	    	  return (isVisible() || alwaysEnableRenderSignal);
 	    }
@@ -118,27 +127,41 @@ public class SoQtRenderArea extends SoQtGLWidget {
 	private boolean useSampleBuffers;
 	    //! number of sample buffers that should be used (0 = automatic)
 	private int  numSampleBuffers;
-	    
+
+	//! Used API
+	private API api;
+
 	public SoQtRenderArea(Container parent, int style) {
-		this(parent,style,true);
+		this(parent,style,true, API.OpenGL);
 	}
-	public SoQtRenderArea(Container parent, int style, boolean build) {
+	public SoQtRenderArea(Container parent, int style, boolean build, API api) {
 		super(parent, style);
+		this.api = api;
 	    SoQt.init("Dummy");
 
 	    // Inventor specific variables
 //	    QGLFormat glf (QGL::Rgba | QGL::DoubleBuffer | QGL::DepthBuffer | QGL::DirectRendering);
-	    GLData glf = new GLData(/*GLProfile.getDefault()*/);
-	    glf.depthSize = 24;
-	    glf.doubleBuffer = true;
-	    // YB : must be compatible with software rendering Mesa3D for Windows, and Linux on VirtualBox
-	    glf.majorVersion = 4;//2;
-	    glf.minorVersion = 0;//1;
-	    glf.api = GLData.API.GL;
-	    glf.profile = GLData.Profile.CORE;//COMPATIBILITY; //no profile for 3.1
-	    glf.debug = true;// false; //true; debug profile not always available in Linux
-	    // Call setFormat from parent class to avoid early construction of decoration which will fail
-	    super.setFormat(glf);
+		if (api == API.OpenGL) {
+			GLData glf = new GLData(/*GLProfile.getDefault()*/);
+			glf.depthSize = 24;
+			glf.doubleBuffer = true;
+			// YB : must be compatible with software rendering Mesa3D for Windows, and Linux on VirtualBox
+			glf.majorVersion = 4;//2;
+			glf.minorVersion = 0;//1;
+			glf.api = GLData.API.GL;
+			glf.profile = GLData.Profile.CORE;//COMPATIBILITY; //no profile for 3.1
+			glf.debug = true;// false; //true; debug profile not always available in Linux
+			// Call setFormat from parent class to avoid early construction of decoration which will fail
+			super.setFormat(glf);
+		}
+		else if (api == API.Vulkan) {
+			VKData vkf = new VKData();
+			VulkanState vulkanState = new VulkanState();
+			vulkanState.init_vulkan_instance();
+			setVulkanState(vulkanState);
+			vkf.instance = vulkanState.getInstance();
+			super.setFormat(vkf);
+		}
 
 	    //setBorder (true);
 
@@ -239,7 +262,7 @@ processSoEvent(final SoEvent event)
     protected void setWindowElement(SoState state) {
     	soQtSceneHandler.setWindowElement(state);
     }
-    protected Component getDeviceWidget() { return getGLWidget(); }
+    protected Component getDeviceWidget() { return (Canvas)getGLWidget(); }
     protected boolean isSceneVisible() {
     	  return (isVisible() || alwaysEnableRenderSignal);    	
     }
@@ -265,15 +288,17 @@ public boolean setAntialiasing (boolean smoothing, int numPasses)
 {
     if (getSceneHandler().setAntialiasing(smoothing, numPasses)) {
 
-    	GLData format = this.format();
-    	int bits = smoothing ? 5 : 0;
-        if (format.accumGreenSize != bits) {
-        	format.accumAlphaSize = bits;
-        	format.accumBlueSize=bits;
-        	format.accumGreenSize=bits;
-        	format.accumRedSize=bits;
-            setFormat (format);
-        }
+    	if (format() instanceof GLData) {
+			GLData format = (GLData)this.format();
+			int bits = smoothing ? 5 : 0;
+			if (format.accumGreenSize != bits) {
+				format.accumAlphaSize = bits;
+				format.accumBlueSize = bits;
+				format.accumGreenSize = bits;
+				format.accumRedSize = bits;
+				setFormat(format);
+			}
+		}
         return true;
     } else {
       return false;

@@ -171,11 +171,15 @@ public class SoQtExaminerViewer extends SoQtFullViewer {
     }
     public SoQtExaminerViewer (BuildFlag flag, Type type,
                     Container parent) {
-    	this(flag, type, parent, 0);
+    	this(flag, type, parent, 0,API.OpenGL);
     }
     public SoQtExaminerViewer (BuildFlag flag, Type type,
-                        Container parent, int f) {
-    	super(flag, type, parent, f);
+                               Container parent, int f) {
+        this(flag,type,parent,f,API.OpenGL);
+    }
+    public SoQtExaminerViewer (BuildFlag flag, Type type,
+                        Container parent, int f, API api) {
+    	super(flag, type, parent, f, api);
         commonConstructor();
     }
 
@@ -183,7 +187,7 @@ public class SoQtExaminerViewer extends SoQtFullViewer {
     public SoQtExaminerViewer (Container parent, String name,
     boolean buildInsideParent, BuildFlag flag,
     Type type, boolean buildNow) {
-    	super (flag, type, parent, 0);
+    	super (flag, type, parent, 0,API.OpenGL);
 
     //setObjectName (name);
     commonConstructor();

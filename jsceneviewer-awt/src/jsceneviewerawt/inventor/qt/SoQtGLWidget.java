@@ -49,6 +49,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jsceneviewerawt.QGLWidget;
+import jsceneviewerawt.QVKWidget;
+import jsceneviewerawt.QWidget;
+import jsceneviewerawt.VulkanState;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.GLUtil;
@@ -62,6 +65,8 @@ import com.jogamp.opengl.GL2;
 import jscenegraph.database.inventor.SbVec2s;
 import jscenegraph.port.Ctx;
 import jscenegraph.port.Destroyable;
+import org.lwjgl.vulkan.awt.VKData;
+import vulkanguide.VulkanEngine;
 
 import javax.swing.*;
 
@@ -74,9 +79,9 @@ public class SoQtGLWidget extends Container implements Destroyable {
 	private final int style;
 	
     //! the real GL widget
-	private QGLWidget mainWidget;
-    //! the GL format to use
-	private GLData glFormat;
+	private QWidget mainWidget;
+    //! the GL format to use, GLData or VKData
+	private /*GLData*/Object glFormat;
 
 
     //! currently set cursor for the GL widget
@@ -105,6 +110,8 @@ public class SoQtGLWidget extends Container implements Destroyable {
 	int lastRenderHeight = -1;
 	int lastRenderWidth = -1;
 
+	private VulkanState vulkanState;
+
 	private interface eventCBType {
     	boolean run(Object userData, ComponentEvent anyevent);
     }
@@ -124,14 +131,20 @@ public class SoQtGLWidget extends Container implements Destroyable {
 	
 	
     public boolean doubleBuffer() {
-    	return format().doubleBuffer;
+		Object formatObject = format();
+		if(formatObject instanceof GLData) {
+			return ((GLData)formatObject).doubleBuffer;
+		}
+		else {
+			return true;
+		}
     }
 	
 
-public GLData format()
+public /*GLData*/Object format()
 {
     if (mainWidget != null && mainWidget.isVisible()/*isRealized()*/) {
-        return (GLData)mainWidget.format();
+        return /*(GLData)*/mainWidget.format();
     } else {
         // return default format
         return glFormat;
@@ -173,12 +186,12 @@ public GLData format()
     		GLData capsChooser = null;
     		
             replaceWidget (/*new GLCanvas(this,style,capsReqUser,capsChooser)*/
-                contextShareManager.createWidget (glFormat, style, this, shareGroup));
+                contextShareManager.createWidget (glFormat, style, this, shareGroup, vulkanState));
         }
     }
     
     //! Get pointer to the real GL widget, automatically calls buildWidget
-    public QGLWidget getGLWidget() {
+    public QWidget getGLWidget() {
         if (mainWidget == null) {
             buildWidget(style);
         }
@@ -264,13 +277,7 @@ public GLData format()
     //! return actual size of the GL widget drawing area
     public SbVec2s getGlxSize() {
         if (mainWidget != null) {
-            // QGLWidget::size calls QWidget::size which returns the size in window coordinates
-            // we need to scale this size by the device pixel ratio.
-            Dimension size = mainWidget.getSize()/*size() * mainWidget.devicePixelRatio()*/;
-
-            AffineTransform at = mainWidget.getGraphicsConfiguration().getDefaultTransform();
-
-            return new SbVec2s ((short)(size.width*at.getScaleX()), (short)(size.height*at.getScaleY()));
+        	return mainWidget.getGlxSize();
         } else {
             return new SbVec2s (/*minGLWidth*/(short)1, /*minGLHeight*/(short)1);
         }    	
@@ -299,8 +306,8 @@ public GLData format()
     
     private
         //! replace main GL widget with a new one, the previous one is destroyed
-        void replaceWidget (QGLWidget newWidget) {
-    	add(newWidget,BorderLayout.CENTER);
+        void replaceWidget (QWidget newWidget) {
+    	add((Canvas)newWidget,BorderLayout.CENTER);
         mainWidget = newWidget;    	
         
         //firstVisibility = true;
@@ -476,7 +483,7 @@ public GLData format()
     }
     
     public void destructor() {
-        contextShareManager.removeWidget (mainWidget);
+        contextShareManager.removeWidget ((Canvas)mainWidget);
 	}
 
 	public static enum EventType {
@@ -553,12 +560,12 @@ public GLData format()
     }
     
   //! Set the GL format. Same restrictions apply as above.
-  public void setFormat ( GLData format)
+  public void setFormat ( /*GLData*/Object format)
   {
       glFormat = format;
       if (mainWidget != null) {
           replaceWidget (
-              contextShareManager.createWidget (format, style, this, shareGroup));
+              contextShareManager.createWidget (format, style, this, shareGroup,vulkanState));
       }
   }
 
@@ -577,15 +584,15 @@ public
     //! context sharing with other widgets (created with this method)
     //! with the same shareGroup id. [Attention: Traverses linear list!]
     //! A shareGroup of -1 means no sharing.
-	QGLWidget createWidget ( GLData theFormat, int style, SoQtGLWidget parent,
-                                 int shareGroup) {
-		GLData format = theFormat;
+	QWidget createWidget ( /*GLData*/Object theFormat, int style, SoQtGLWidget parent,
+                                 int shareGroup, VulkanState vulkanState) {
+		/*GLData*/Object format = theFormat;
 	//  Use these to enable core profile without deprecated functions (Experimental!)
 //	    format.setProfile(QGLFormat::CoreProfile);
 //	    format.setOption(QGL::NoDeprecatedFunctions);
 
 	    int shareID = -1;
-		QGLWidget widget = null;
+		QWidget widget = null;
 	    int count = entries.size();
 	    int i=0;
 //	    while (i<count && shareGroup != -1) {
@@ -615,7 +622,12 @@ public
 	    	
 	    	// we didn't find any widget for this share group, so lets
 	        // just create a new one without sharing
-	        widget = new QGLWidget(parent,/*style | SWT.NO_BACKGROUND | SWT.NO_REDRAW_RESIZE,*/format);
+			if (format instanceof GLData) {
+				widget = new QGLWidget(parent,/*style | SWT.NO_BACKGROUND | SWT.NO_REDRAW_RESIZE,*/(GLData)format);
+			}
+			else if (format instanceof VKData) {
+				widget = new QVKWidget(parent,(VKData)format,vulkanState);
+			}
 	    	GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_DEBUG_CONTEXT, GLFW.GLFW_TRUE);
 	        //widget.setCurrent();
 	    	GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_DEBUG_CONTEXT, GLFW.GLFW_TRUE);
@@ -635,13 +647,13 @@ public
 	}
 
     //! remove GL widget from the internal sharing list.
-    public void removeWidget (AWTGLCanvas widget) {
+    public void removeWidget (Canvas widget) {
         while(entries.remove (widget));
     }
 
 private
     //! internal list of widgets
-    final List<AWTGLCanvas> entries = new ArrayList<>();
+    final List<QWidget> entries = new ArrayList<>();
 
     //! next share id to give to un-shared context
     private int nextShareID;
@@ -654,9 +666,11 @@ private
 protected void setStereoBuffer (boolean flag)
 {
     if (flag != isStereoBuffer()) {
-    	GLData newFormat = format();
-        newFormat.stereo = flag;
-        setFormat (newFormat);
+    	if(format() instanceof GLData) {
+			GLData newFormat = (GLData)format();
+			newFormat.stereo = flag;
+			setFormat(newFormat);
+		}
     }
 }
 
@@ -664,24 +678,35 @@ protected void setStereoBuffer (boolean flag)
 public void setColorBitDepth (int depth)
 {
     if (depth != getColorBitDepth()) {
-    	GLData newFormat = format();
-        newFormat.redSize = depth;
-        newFormat.greenSize = depth;
-        newFormat.blueSize = depth;
-        newFormat.alphaSize = depth;
-        newFormat.depthSize = depth;
-        setFormat (newFormat);
+		if(format() instanceof GLData) {
+			GLData newFormat = (GLData)format();
+			newFormat.redSize = depth;
+			newFormat.greenSize = depth;
+			newFormat.blueSize = depth;
+			newFormat.alphaSize = depth;
+			newFormat.depthSize = depth;
+			setFormat(newFormat);
+		}
     }
 }
 
 
 public int getColorBitDepth()
 {
-	GLData currFormat = format();
-    int depth = currFormat.redSize;
-    if (depth > currFormat.greenSize) { depth = currFormat.greenSize; }
-    if (depth > currFormat.blueSize)  { depth = currFormat.blueSize;  }
-    return depth;
+	if(format() instanceof GLData) {
+		GLData currFormat = (GLData)format();
+		int depth = currFormat.redSize;
+		if (depth > currFormat.greenSize) {
+			depth = currFormat.greenSize;
+		}
+		if (depth > currFormat.blueSize) {
+			depth = currFormat.blueSize;
+		}
+		return depth;
+	}
+	else {
+		return 10; //TODO
+	}
 }
 
 
@@ -739,4 +764,7 @@ public int getColorBitDepth()
 //	public void paint(Graphics g) {
 //	}
 
+	protected void setVulkanState(VulkanState state) {
+	  	vulkanState = state;
+	}
 }

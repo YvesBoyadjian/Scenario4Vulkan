@@ -140,10 +140,10 @@ public class SoQtFullViewer extends SoQtViewer {
 	    	this(flag,type,null);
 	    }
 	    public SoQtFullViewer (BuildFlag flag, Type type, Container parent) {
-	    	this(flag,type,parent,0);
+	    	this(flag,type,parent,0,API.OpenGL);
 	    }
-	    public SoQtFullViewer (BuildFlag flag, Type type, Container parent, int style) {
-	    	super(type,parent,style);
+	    public SoQtFullViewer (BuildFlag flag, Type type, Container parent, int style, API api) {
+	    	super(type,parent,style,false,api);
 	        // init decoration vars
 	        // (decorations really are created all the time, they just are hidden if this flag is not set)
 	        decorationFlag = (flag.value & BuildFlag.BUILD_DECORATION.value) != 0;

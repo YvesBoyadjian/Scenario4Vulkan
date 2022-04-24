@@ -34,6 +34,11 @@ public class Triangle {
         final Init init = new Init();
         final RenderData render_data = new RenderData();
 
+        if (0 != instance_initialization(init)) return;
+        if (0 != window_initialization(init)) return;
+
+        if (0 != surface_initialization(init)) return;
+
         if (0 != device_initialization (init)) return;
         if (0 != create_swapchain (init)) return;
         if (0 != get_queues (init, render_data)) return;
@@ -58,8 +63,12 @@ public class Triangle {
         cleanup (init, render_data);
     }
 
-    static int device_initialization (Init init) {
+    static int window_initialization (Init init) {
         init.window = Common.create_window_glfw ("Vulkan Triangle", true);
+        return (init.window != 0) ? 0 : -1;
+    }
+
+    static public int instance_initialization(Init init) {
 
         final VkbInstanceBuilder instance_builder = new VkbInstanceBuilder();
         var instance_ret = instance_builder.use_default_debug_messenger ().request_validation_layers ().build ();
@@ -71,7 +80,17 @@ public class Triangle {
 
         init.vk_lib.init(init.instance.instance[0]);
 
+        return 0;
+    }
+
+    static int surface_initialization(Init init) {
+
         init.surface = Common.create_surface_glfw (init.instance.instance[0], init.window);
+
+        return (init.surface != 0) ? 0 : -1;
+    }
+
+    public static int device_initialization(Init init) {
 
         final VkbPhysicalDeviceSelector phys_device_selector = new VkbPhysicalDeviceSelector(init.instance);
         var phys_device_ret = phys_device_selector.set_surface (init.surface).select ();
@@ -93,7 +112,7 @@ public class Triangle {
         return 0;
     }
 
-    static int create_swapchain (final Init init) {
+    public static int create_swapchain(final Init init) {
 
         final VkbSwapchainBuilder swapchain_builder = new VkbSwapchainBuilder( init.device );
         var swap_ret = swapchain_builder.set_old_swapchain (init.swapchain).build ();
@@ -106,7 +125,7 @@ public class Triangle {
         return 0;
     }
 
-    static int get_queues (final Init init, final RenderData data) {
+    static public int get_queues (final Init init, final RenderData data) {
         var gq = init.device.get_queue (VkbQueueType.graphics);
         if (!gq.has_value ()) {
             System.out.println( "failed to get graphics queue: " + gq.error ().message () );
@@ -123,7 +142,7 @@ public class Triangle {
         return 0;
     }
 
-    static int create_render_pass (final Init init, final RenderData data) {
+    public static int create_render_pass(final Init init, final RenderData data) {
         final VkAttachmentDescription.Buffer color_attachment_desc_buf = VkAttachmentDescription.create(1);
         final VkAttachmentDescription color_attachment = color_attachment_desc_buf.get(0);
         color_attachment.format( init.swapchain.image_format);
@@ -201,7 +220,7 @@ public class Triangle {
         return shaderModule[0];
     }
 
-    static int create_graphics_pipeline (final Init init, final RenderData data) {
+    public static int create_graphics_pipeline(final Init init, final RenderData data) {
         var vert_code = readFile(EXAMPLE_BUILD_DIRECTORY + "/vert.spv");
         var frag_code = readFile(EXAMPLE_BUILD_DIRECTORY + "/frag.spv");
 
@@ -458,7 +477,7 @@ public class Triangle {
         return 0;
     }
 
-    static int create_sync_objects (final Init init, final RenderData data) {
+    public static int create_sync_objects(final Init init, final RenderData data) {
         data.available_semaphores.clear(); for(int i=0;i<MAX_FRAMES_IN_FLIGHT;i++) data.available_semaphores.add(new long[1]);//resize (MAX_FRAMES_IN_FLIGHT);
         data.finished_semaphore.clear(); for(int i=0;i<MAX_FRAMES_IN_FLIGHT;i++) data.finished_semaphore.add(new long[1]);//resize (MAX_FRAMES_IN_FLIGHT);
         data.in_flight_fences.clear(); for(int i=0;i<MAX_FRAMES_IN_FLIGHT;i++) data.in_flight_fences.add(new long[1]);//resize (MAX_FRAMES_IN_FLIGHT);
@@ -482,7 +501,7 @@ public class Triangle {
         return 0;
     }
 
-    static int recreate_swapchain (final Init init, final RenderData data) {
+    public static int recreate_swapchain(final Init init, final RenderData data) {
         init.arrow_operator().vkDeviceWaitIdle.invoke (init.device.device[0]);
 
         init.arrow_operator().vkDestroyCommandPool.invoke (init.device.device[0], data.command_pool[0], null);
@@ -500,7 +519,7 @@ public class Triangle {
         return 0;
     }
 
-    static int draw_frame (final Init init, final RenderData data) {
+    public static int draw_frame(final Init init, final RenderData data) {
         init.arrow_operator().vkWaitForFences.invoke (init.device.device[0], /*1,*/ data.in_flight_fences.get((int)data.current_frame), VK_TRUE != 0, Port.UINT64_MAX);
 
         final int[] image_index = new int[1];

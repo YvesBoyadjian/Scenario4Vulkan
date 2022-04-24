@@ -162,7 +162,7 @@ public class SoQtConstrainedViewer extends SoQtFullViewer {
             SoQtFullViewer.BuildFlag flag,
             SoQtCameraController.Type type,
             Container parent, int f) {
-		super(flag, type, parent, f);
+		super(flag, type, parent, f,API.OpenGL);
 		
     	cameraController = new SoQtConstrainedCameraController(type, upDirection) {
 

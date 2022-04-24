@@ -16,6 +16,7 @@ import jscenegraph.database.inventor.nodes.*;
 import jscenegraph.port.Ctx;
 import jsceneviewerawt.inventor.qt.SoQt;
 import jsceneviewerawt.inventor.qt.SoQtCameraController;
+import jsceneviewerawt.inventor.qt.SoQtRenderArea;
 import jsceneviewerawt.inventor.qt.viewers.SoQtExaminerViewer;
 import jsceneviewerawt.inventor.qt.viewers.SoQtFullViewer;
 import org.lwjgl.opengl.GLDebugMessageCallback;
@@ -120,7 +121,9 @@ public static void main(String[] args) {
         SoQtExaminerViewer examinerViewer = new SoQtExaminerViewer(
                 SoQtFullViewer.BuildFlag.BUILD_ALL,
                 SoQtCameraController.Type.BROWSER,
-                /*panel*/frame.getContentPane()
+                /*panel*/frame.getContentPane(),
+                0,
+                SoQtRenderArea.API.OpenGL
         ) {
             public void initializeGL(GL2 gl2) {
                 super.initializeGL(gl2);

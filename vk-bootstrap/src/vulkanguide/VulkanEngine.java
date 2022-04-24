@@ -52,6 +52,9 @@ public class VulkanEngine {
 
     public VkInstance _instance;
     public /*VkDebugUtilsMessengerEXT*/long _debug_messenger;
+
+    public VkbInstance vkb_inst;
+
     public VkPhysicalDevice _chosenGPU;
     public VkDevice _device;
 
@@ -118,8 +121,7 @@ public class VulkanEngine {
         }
     }
 
-    /*37*/ public void init()
-    {
+    /*37*/ public void init() {
         // We initialize SDL and create a window with it.
         //SDL_Init(SDL_INIT_VIDEO);
         glfwInit();
@@ -138,7 +140,15 @@ public class VulkanEngine {
         );*/
                 glfwCreateWindow(_windowExtent.width(), _windowExtent.height(), "Vulkan Engine", 0, 0);
 
-        init_vulkan();
+        //init_vulkan();
+        init_vulkan_instance();
+        init_window_surface();
+        init_VK();
+    }
+
+    public void init_VK() {
+
+        init_vulkan_with_surface();
 
         init_swapchain();
 
@@ -183,7 +193,7 @@ public class VulkanEngine {
         }
     }
 
-    /*96*/ void draw()
+    /*96*/ public void draw()
     {
 
         //wait until the gpu has finished rendering the last frame. Timeout of 1 second
@@ -339,8 +349,7 @@ public class VulkanEngine {
         return _frames[_frameNumber % FRAME_OVERLAP];
     }
 
-    /*230*/ public void init_vulkan()
-    {
+    public void init_vulkan_instance() {
         final VkbInstanceBuilder builder = new VkbInstanceBuilder();
 
         //make the vulkan instance, with basic debug features
@@ -350,14 +359,26 @@ public class VulkanEngine {
                 .require_api_version(1, 1, 0)
                 .build();
 
-        VkbInstance vkb_inst = inst_ret.value();
+        vkb_inst = inst_ret.value();
 
         //grab the instance
         _instance = vkb_inst.instance[0];
         _debug_messenger = vkb_inst.debug_messenger[0];
+    }
 
+    public void init_window_surface() {
         //SDL_Vulkan_CreateSurface(_window, _instance, &_surface);
         glfwCreateWindowSurface(_instance, _window, /*allocator*/null, _surface);
+    }
+
+    /*230*/ public void init_vulkan() {
+        init_vulkan_instance();
+        init_window_surface();
+
+        init_vulkan_with_surface();
+    }
+
+    public void init_vulkan_with_surface() {
 
         //use vkbootstrap to select a gpu.
         //We want a gpu that can write to the SDL surface and supports vulkan 1.2

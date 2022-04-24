@@ -8,7 +8,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="jscenegraph" />
-    <orderEntry type="module" module-name="lwjgl3-awt" />
     <orderEntry type="module" module-name="jsceneviewer-awt" />
     <orderEntry type="module" module-name="vk-bootstrap" />
   </component>

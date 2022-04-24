@@ -9,7 +9,7 @@ import org.lwjgl.opengl.awt.GLData;
 import javax.swing.*;
 import java.awt.*;
 
-public class QGLWidget extends AWTGLCanvas {
+public class QGLWidget extends AWTGLCanvas implements QWidget {
 
     SoQtGLWidget _w;
 

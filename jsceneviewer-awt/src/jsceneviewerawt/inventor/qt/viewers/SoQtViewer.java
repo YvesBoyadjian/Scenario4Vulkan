@@ -190,16 +190,16 @@ public class SoQtViewer extends SoQtRenderArea {
                              boolean embed,
                              Type t,
                              boolean build) {
-	    	this(t,parent,0,build);
+	    	this(t,parent,0,build,API.OpenGL);
 	    }
-	    public SoQtViewer (Type type, Container parent, int style, boolean build) {
-	    	super(parent, style, build);
+	    public SoQtViewer (Type type, Container parent, int style, boolean build, API api) {
+	    	super(parent, style, build, api);
 	    	constructorCommon(type);
 	    }
 	    	
 	    	    	    
 	    public SoQtViewer (Type type, Container parent, int style) {
-	    	super(parent, style, false);
+	    	super(parent, style, false, API.OpenGL);
 	    	constructorCommon(type);
 	    }
 	    	
