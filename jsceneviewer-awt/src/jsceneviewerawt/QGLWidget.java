@@ -43,6 +43,11 @@ public class QGLWidget extends AWTGLCanvas implements QWidget {
         }
     }
 
+    @Override
+    public void dispose() {
+        // nothing to do
+    }
+
 
     /* override and return false on components that DO NOT require
        a clearRect() before painting (i.e. native components) */

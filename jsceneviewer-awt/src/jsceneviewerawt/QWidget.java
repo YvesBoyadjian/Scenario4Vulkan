@@ -46,4 +46,6 @@ public interface QWidget {
 
         return new SbVec2s ((short)(size.width*at.getScaleX()), (short)(size.height*at.getScaleY()));
     }
+
+    void dispose();
 }

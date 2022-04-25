@@ -484,6 +484,8 @@ public /*GLData*/Object format()
     
     public void destructor() {
         contextShareManager.removeWidget ((Canvas)mainWidget);
+		mainWidget.dispose();
+		mainWidget = null;
 	}
 
 	public static enum EventType {

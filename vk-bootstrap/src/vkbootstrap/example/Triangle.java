@@ -52,7 +52,7 @@ public class Triangle {
 
         while (!glfwWindowShouldClose (init.window)) {
             glfwPollEvents ();
-            int res = draw_frame (init, render_data);
+            int res = draw_frame (init, render_data, renderer);
             if (res != 0) {
                 System.out.println( "failed to draw frame ");
                 return;
@@ -338,20 +338,42 @@ public class Triangle {
 
         final VkGraphicsPipelineCreateInfo.Buffer pipeline_info_buf = VkGraphicsPipelineCreateInfo.create(1);
         final VkGraphicsPipelineCreateInfo pipeline_info = pipeline_info_buf.get(0);
-        pipeline_info.sType( VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
-        //pipeline_info.stageCount( 2); java port
-        pipeline_info.pStages( shader_stages);
-        pipeline_info.pVertexInputState( vertex_input_info);
-        pipeline_info.pInputAssemblyState( input_assembly);
-        pipeline_info.pViewportState( viewport_state);
-        pipeline_info.pRasterizationState( rasterizer);
-        pipeline_info.pMultisampleState( multisampling);
-        pipeline_info.pColorBlendState( color_blending);
-        pipeline_info.pDynamicState( dynamic_info);
-        pipeline_info.layout( data.pipeline_layout[0]);
-        pipeline_info.renderPass( data.render_pass[0]);
-        pipeline_info.subpass( 0);
-        pipeline_info.basePipelineHandle( VK_NULL_HANDLE);
+
+        pipeline_info.set(
+                VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+                (long)0,
+                (int)0,
+                shader_stages,
+                vertex_input_info,
+                input_assembly,
+                (VkPipelineTessellationStateCreateInfo)null,
+                viewport_state,
+                rasterizer,
+                multisampling,
+                (VkPipelineDepthStencilStateCreateInfo)null,
+                color_blending,
+                dynamic_info,
+                data.pipeline_layout[0],
+                data.render_pass[0],
+                0,
+                VK_NULL_HANDLE,
+                0
+        );
+
+//        pipeline_info.sType( VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
+//        //pipeline_info.stageCount( 2); java port
+//        pipeline_info.pStages( shader_stages);
+//        pipeline_info.pVertexInputState( vertex_input_info);
+//        pipeline_info.pInputAssemblyState( input_assembly);
+//        pipeline_info.pViewportState( viewport_state);
+//        pipeline_info.pRasterizationState( rasterizer);
+//        pipeline_info.pMultisampleState( multisampling);
+//        pipeline_info.pColorBlendState( color_blending);
+//        pipeline_info.pDynamicState( dynamic_info);
+//        pipeline_info.layout( data.pipeline_layout[0]);
+//        pipeline_info.renderPass( data.render_pass[0]);
+//        pipeline_info.subpass( 0);
+//        pipeline_info.basePipelineHandle( VK_NULL_HANDLE);
 
         if (init.arrow_operator().vkCreateGraphicsPipelines.invoke (
                 init.device.device[0], VK_NULL_HANDLE,/* 1,*/ pipeline_info_buf, null, data.graphics_pipeline) != VK_SUCCESS) {
@@ -406,6 +428,8 @@ public class Triangle {
         pool_info.sType( VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
         pool_info.queueFamilyIndex( init.device.get_queue_index (VkbQueueType.graphics).value ());
 
+        pool_info.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+
         if (init.arrow_operator().vkCreateCommandPool.invoke (init.device.device[0], pool_info, null, data.command_pool) != VK_SUCCESS) {
             System.out.println( "failed to create command pool");
             return -1; // failed to create command pool
@@ -431,7 +455,7 @@ public class Triangle {
         }
 
         for (int i = 0; i < data.image_datas.size(); i++) {
-            int ret_val = begin_end_command_buffer(init,data,data.image_datas.get(i));
+            int ret_val = begin_end_command_buffer(init,data,data.image_datas.get(i),renderer);
             if( ret_val != 0) {
                 return ret_val;
             }
@@ -439,7 +463,7 @@ public class Triangle {
         return 0;
     }
 
-    static int begin_end_command_buffer(final Init init, final RenderData data, ImageData imageData) {
+    static int begin_end_command_buffer(final Init init, final RenderData data, ImageData imageData,Renderer renderer) {
 
             final VkCommandBufferBeginInfo begin_info = VkCommandBufferBeginInfo.create();
             begin_info.sType( VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
@@ -485,9 +509,7 @@ public class Triangle {
 
             init.arrow_operator().vkCmdBeginRenderPass.invoke (imageData.command_buffer, render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-            init.arrow_operator().vkCmdBindPipeline.invoke (imageData.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, data.graphics_pipeline[0]);
-
-            init.arrow_operator().vkCmdDraw.invoke (imageData.command_buffer, 3, 1, 0, 0);
+            renderer.render(init, data, imageData);
 
             init.arrow_operator().vkCmdEndRenderPass.invoke (imageData.command_buffer);
 
@@ -497,6 +519,17 @@ public class Triangle {
             }
         return 0;
     }
+
+    public static Renderer renderer = new Renderer() {
+        @Override
+        public int render(Init init, RenderData data, ImageData imageData) {
+
+            init.arrow_operator().vkCmdBindPipeline.invoke (imageData.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, data.graphics_pipeline[0]);
+
+            init.arrow_operator().vkCmdDraw.invoke (imageData.command_buffer, 3, 1, 0, 0);
+            return 0;
+        }
+    };
 
     public static int create_sync_objects(final Init init, final RenderData data) {
         data.available_semaphores.clear(); for(int i=0;i<MAX_FRAMES_IN_FLIGHT;i++) data.available_semaphores.add(new long[1]);//resize (MAX_FRAMES_IN_FLIGHT);
@@ -541,7 +574,7 @@ public class Triangle {
         return 0;
     }
 
-    public static int draw_frame(final Init init, final RenderData data) {
+    public static int draw_frame(final Init init, final RenderData data, final Renderer renderer) {
         init.arrow_operator().vkWaitForFences.invoke (init.device.device[0], /*1,*/ data.in_flight_fences.get((int)data.current_frame), VK_TRUE != 0, Port.UINT64_MAX);
 
         final int[] image_index = new int[1];
@@ -587,6 +620,11 @@ public class Triangle {
 
         init.arrow_operator().vkResetFences.invoke (init.device.device[0], /*1,*/ data.in_flight_fences.get((int)data.current_frame));
 
+        vkResetCommandBuffer(imageData.command_buffer,0);
+
+        begin_end_command_buffer(init,data,imageData,renderer);
+
+        //__________________________________________________________________________________________________ Submit Queue
         if (init.arrow_operator().vkQueueSubmit.invoke (data.graphics_queue, /*1,*/ submitInfo, data.in_flight_fences.get((int)data.current_frame)[0]) != VK_SUCCESS) {
             System.out.println( "failed to submit draw command buffer");
             return -1; //"failed to submit draw command buffer
@@ -619,7 +657,7 @@ public class Triangle {
         return 0;
     }
 
-    static void cleanup (final Init init, final RenderData data) {
+    public static void cleanup(final Init init, final RenderData data) {
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             init.arrow_operator().vkDestroySemaphore.invoke (init.device.device[0], data.finished_semaphore.get(i)[0], null);
             init.arrow_operator().vkDestroySemaphore.invoke (init.device.device[0], data.available_semaphores.get(i)[0], null);

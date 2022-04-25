@@ -5,6 +5,8 @@ import vkbootstrap.example.Init;
 import vkbootstrap.example.RenderData;
 import vkbootstrap.example.Triangle;
 
+import static vkbootstrap.example.Triangle.renderer;
+
 public class VulkanState {
     final Init init = new Init();
     final RenderData render_data = new RenderData();
@@ -34,7 +36,12 @@ public class VulkanState {
         if (0 != Triangle.create_sync_objects (init, render_data)) return;
     }
 
-    public void draw() {
-        Triangle.draw_frame (init, render_data);
+    public void draw_VK() {
+        Triangle.draw_frame (init, render_data,renderer);
+    }
+
+    public void cleanup_VK() {
+        init.arrow_operator().vkDeviceWaitIdle.invoke (init.device.device[0]);
+        Triangle.cleanup(init,render_data);
     }
 }

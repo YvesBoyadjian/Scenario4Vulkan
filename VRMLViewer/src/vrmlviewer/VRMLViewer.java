@@ -27,6 +27,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetDropEvent;
+import java.awt.event.*;
 import java.io.File;
 import java.util.List;
 import static org.lwjgl.opengl.GL43C.*;
@@ -42,7 +43,7 @@ public static void main(String[] args) {
     frame.getContentPane().setBackground(new Color(0,true));
     //frame.getContentPane().add(panel);
     frame.getContentPane().setLayout(new BorderLayout());
-    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 //    frame.pack();
     frame.setLocationRelativeTo(null);
 //    frame.setVisible(true);
@@ -123,7 +124,7 @@ public static void main(String[] args) {
                 SoQtCameraController.Type.BROWSER,
                 /*panel*/frame.getContentPane(),
                 0,
-                SoQtRenderArea.API.OpenGL
+                SoQtRenderArea.API.Vulkan
         ) {
             public void initializeGL(GL2 gl2) {
                 super.initializeGL(gl2);
@@ -209,6 +210,44 @@ public static void main(String[] args) {
                 }
             }
 
+        });
+
+        frame.addWindowListener(new WindowListener() {
+            @Override
+            public void windowOpened(WindowEvent e) {
+
+            }
+
+            @Override
+            public void windowClosing(WindowEvent e) {
+                upperCache.unref();
+                examinerViewer.destructor();
+            }
+
+            @Override
+            public void windowClosed(WindowEvent e) {
+
+            }
+
+            @Override
+            public void windowIconified(WindowEvent e) {
+
+            }
+
+            @Override
+            public void windowDeiconified(WindowEvent e) {
+
+            }
+
+            @Override
+            public void windowActivated(WindowEvent e) {
+
+            }
+
+            @Override
+            public void windowDeactivated(WindowEvent e) {
+
+            }
         });
     });
 }

@@ -39,7 +39,7 @@ public class QVKWidget extends AWTVKCanvas implements QWidget {
         SbVec2s glxSize = getGlxSize();
 //        engine._windowExtent.width(glxSize.getX());
 //        engine._windowExtent.height(glxSize.getY());
-        vkState.draw();
+        vkState.draw_VK();
     }
 /*
     @Override
@@ -70,5 +70,9 @@ public class QVKWidget extends AWTVKCanvas implements QWidget {
     @Override
     public void render() {
         repaint();
+    }
+
+    public void dispose() {
+        vkState.cleanup_VK();
     }
 }
