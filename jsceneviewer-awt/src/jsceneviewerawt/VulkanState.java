@@ -1,15 +1,27 @@
 package jsceneviewerawt;
 
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
+import org.lwjgl.util.vma.VmaVulkanFunctions;
 import org.lwjgl.vulkan.VkInstance;
 import vkbootstrap.example.Init;
 import vkbootstrap.example.RenderData;
+import vkbootstrap.example.Renderer;
 import vkbootstrap.example.Triangle;
 
-import static vkbootstrap.example.Triangle.renderer;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.lwjgl.system.MemoryUtil.memAllocPointer;
+import static org.lwjgl.system.MemoryUtil.memFree;
+import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
+import static org.lwjgl.util.vma.Vma.vmaDestroyAllocator;
 
 public class VulkanState {
     final Init init = new Init();
     final RenderData render_data = new RenderData();
+
+    final List<Runnable> cleaners = new ArrayList<>();
 
     public void init_vulkan_instance() {
         Triangle.instance_initialization(init);
@@ -25,6 +37,7 @@ public class VulkanState {
 
     public void init_VK() {
         if (0 != Triangle.device_initialization (init)) return;
+        Triangle.init_allocator(init);
         if (0 != Triangle.create_swapchain (init)) return;
         if (0 != Triangle.get_queues (init, render_data)) return;
         if (0 != Triangle.create_render_pass (init, render_data)) return;
@@ -36,12 +49,27 @@ public class VulkanState {
         if (0 != Triangle.create_sync_objects (init, render_data)) return;
     }
 
-    public void draw_VK() {
+    public void draw_VK(Renderer renderer) {
         Triangle.draw_frame (init, render_data,renderer);
     }
 
     public void cleanup_VK() {
         init.arrow_operator().vkDeviceWaitIdle.invoke (init.device.device[0]);
+
+        cleaners.forEach((r)->r.run());
+
         Triangle.cleanup(init,render_data);
+    }
+
+    public Init getInit() {
+        return init;
+    }
+
+    public RenderData getData() {
+        return render_data;
+    }
+
+    public void addCleaner(Runnable cleaner) {
+        cleaners.add(cleaner);
     }
 }

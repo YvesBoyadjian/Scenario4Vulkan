@@ -2,12 +2,15 @@ package vkbootstrap.example;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.util.vma.VmaAllocationCreateInfo;
+import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
+import org.lwjgl.util.vma.VmaVulkanFunctions;
 import org.lwjgl.vulkan.*;
 import port.Port;
 import tests.Common;
 import vkbootstrap.*;
+import vulkanguide.VkInit;
 
-import javax.management.RuntimeErrorException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -17,8 +20,10 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.glfw.GLFW.glfwPollEvents;
+import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
 import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 import static tests.Common.destroy_window_glfw;
@@ -40,6 +45,9 @@ public class Triangle {
         if (0 != surface_initialization(init)) return;
 
         if (0 != device_initialization (init)) return;
+
+        init_allocator(init);
+
         if (0 != create_swapchain (init)) return;
         if (0 != get_queues (init, render_data)) return;
         if (0 != create_render_pass (init, render_data)) return;
@@ -81,6 +89,28 @@ public class Triangle {
         init.vk_lib.init(init.instance.instance[0]);
 
         return 0;
+    }
+
+    public static void init_allocator(Init init) {
+        //initialize the memory allocator
+        VmaAllocatorCreateInfo allocatorInfo = VmaAllocatorCreateInfo.create();
+        allocatorInfo.physicalDevice( init.device.physical_device.physical_device );
+        allocatorInfo.device(init.device.device[0]);
+        allocatorInfo.instance( init.instance.instance[0] );
+
+        VmaVulkanFunctions vmaVulkanFunctions = VmaVulkanFunctions.create();
+        vmaVulkanFunctions.set( init.instance.instance[0], init.device.device[0] );
+        allocatorInfo.pVulkanFunctions( vmaVulkanFunctions ); // java port
+
+        PointerBuffer pb = memAllocPointer(1);
+        vmaCreateAllocator(allocatorInfo, /*_allocator*/pb);
+        init.allocator = pb.get(0);
+        memFree(pb);
+
+//        _mainDeletionQueue.push_function(() -> {
+//            vmaDestroyAllocator(_allocator);
+//        });
+
     }
 
     static int surface_initialization(Init init) {
@@ -143,7 +173,7 @@ public class Triangle {
     }
 
     public static int create_render_pass(final Init init, final RenderData data) {
-        final VkAttachmentDescription.Buffer color_attachment_desc_buf = VkAttachmentDescription.create(1);
+        final VkAttachmentDescription.Buffer color_attachment_desc_buf = VkAttachmentDescription.create(/*1*/2);
         final VkAttachmentDescription color_attachment = color_attachment_desc_buf.get(0);
         color_attachment.format( init.swapchain.image_format);
         color_attachment.samples( VK_SAMPLE_COUNT_1_BIT);
@@ -159,11 +189,31 @@ public class Triangle {
         color_attachment_ref.attachment( 0);
         color_attachment_ref.layout( VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
+
+        final VkAttachmentDescription depth_attachment = color_attachment_desc_buf.get(1);// VkAttachmentDescription.create();
+        // Depth attachment
+        depth_attachment.flags ( 0);
+        depth_attachment.format ( (int)VK_FORMAT_D32_SFLOAT);
+        depth_attachment.samples ( VK_SAMPLE_COUNT_1_BIT);
+        depth_attachment.loadOp ( VK_ATTACHMENT_LOAD_OP_CLEAR);
+        depth_attachment.storeOp ( VK_ATTACHMENT_STORE_OP_STORE);
+        depth_attachment.stencilLoadOp ( VK_ATTACHMENT_LOAD_OP_CLEAR);
+        depth_attachment.stencilStoreOp ( VK_ATTACHMENT_STORE_OP_DONT_CARE);
+        depth_attachment.initialLayout ( VK_IMAGE_LAYOUT_UNDEFINED);
+        depth_attachment.finalLayout ( VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+        final VkAttachmentReference depth_attachment_ref = VkAttachmentReference.create();
+        depth_attachment_ref.attachment ( 1);
+        depth_attachment_ref.layout ( VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+
         final VkSubpassDescription.Buffer subpass_buf = VkSubpassDescription.create(1);
         final VkSubpassDescription subpass = subpass_buf.get(0);
         subpass.pipelineBindPoint( VK_PIPELINE_BIND_POINT_GRAPHICS);
         subpass.colorAttachmentCount( 1);
         subpass.pColorAttachments( color_attachment_buf);
+        //hook the depth attachment into the subpass
+        subpass.pDepthStencilAttachment ( depth_attachment_ref);
 
         final VkSubpassDependency.Buffer dependency_buf = VkSubpassDependency.create(1);
         final VkSubpassDependency dependency = dependency_buf.get(0);
@@ -339,6 +389,10 @@ public class Triangle {
         final VkGraphicsPipelineCreateInfo.Buffer pipeline_info_buf = VkGraphicsPipelineCreateInfo.create(1);
         final VkGraphicsPipelineCreateInfo pipeline_info = pipeline_info_buf.get(0);
 
+        VkPipelineDepthStencilStateCreateInfo depthStencil = null;
+        //default depthtesting
+        depthStencil = VkInit.depth_stencil_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+
         pipeline_info.set(
                 VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
                 (long)0,
@@ -350,7 +404,7 @@ public class Triangle {
                 viewport_state,
                 rasterizer,
                 multisampling,
-                (VkPipelineDepthStencilStateCreateInfo)null,
+                depthStencil,
                 color_blending,
                 dynamic_info,
                 data.pipeline_layout[0],
@@ -399,16 +453,64 @@ public class Triangle {
             data.image_datas.get(i).setSwapchainImageView(ivs.get(i));
         }
 
+        clean_depth_image(init,data);
+
+        //depth image size will match the window
+        final VkExtent3D depthImageExtent = VkExtent3D.create();
+
+        depthImageExtent.set(
+                init.swapchain.extent.width(),
+                init.swapchain.extent.height(),
+                1
+        );
+
+        //hardcoding the depth format to 32 bit float
+        int _depthFormat = VK_FORMAT_D32_SFLOAT;
+
+        //the depth image will be a image with the format we selected and Depth Attachment usage flag
+        VkImageCreateInfo dimg_info = VkInit.image_create_info(_depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, depthImageExtent);
+
+        //for the depth image, we want to allocate it from gpu local memory
+        final VmaAllocationCreateInfo dimg_allocinfo = VmaAllocationCreateInfo.create();
+        dimg_allocinfo.usage( VMA_MEMORY_USAGE_GPU_ONLY);
+        dimg_allocinfo.requiredFlags( /*VkMemoryPropertyFlags*/(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+
+        //allocate and create the image
+        LongBuffer dummy1 = memAllocLong(1);
+        PointerBuffer dummy2 = memAllocPointer(1);
+
+        vmaCreateImage(init.allocator, dimg_info, dimg_allocinfo, /*_depthImage._image*/dummy1, /*_depthImage._allocation*/dummy2, null);
+        data.depthImage._image = dummy1.get(0);
+        data.depthImage._allocation = dummy2.get(0);
+        memFree(dummy1);
+        memFree(dummy2);
+
+        //build a image-view for the depth image to use for rendering
+        VkImageViewCreateInfo dview_info = VkInit.imageview_create_info(_depthFormat, data.depthImage._image, VK_IMAGE_ASPECT_DEPTH_BIT);;
+
+        VK10.vkCreateImageView(init.device.device[0], dview_info, null, data.depth_image_view);
+
+        //add to deletion queues
+//        _mainDeletionQueue.push_function(() -> {
+//            vkDestroyImageView(_device, _depthImageView[0], null);
+//            vmaDestroyImage(_allocator, _depthImage._image, _depthImage._allocation);
+//        });
+
         //data.framebuffers.resize (data.swapchain_image_views.size ()); java port
 
         for (int i = 0; i < data.image_datas.size (); i++) {
-            /*VkImageView*/long[] attachments = { data.image_datas.get(i).swapchain_image_view };
+
+            LongBuffer attachments = memAllocLong(2);
+            attachments.put(0,data.image_datas.get(i).swapchain_image_view);
+            attachments.put(1,data.depth_image_view[0]);
+
+            ///*VkImageView*/long[] attachments = { data.image_datas.get(i).swapchain_image_view };
 
             final VkFramebufferCreateInfo framebuffer_info = VkFramebufferCreateInfo.create();
             framebuffer_info.sType( VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
             framebuffer_info.renderPass( data.render_pass[0]);
             //framebuffer_info.attachmentCount( 1); java port
-            framebuffer_info.pAttachments( Port.toLongBuffer(attachments));
+            framebuffer_info.pAttachments( attachments);
             framebuffer_info.width( init.swapchain.extent.width());
             framebuffer_info.height( init.swapchain.extent.height());
             framebuffer_info.layers( 1);
@@ -418,7 +520,7 @@ public class Triangle {
             if (init.arrow_operator().vkCreateFramebuffer.invoke (init.device.device[0], framebuffer_info, null, p_framebuffer) != VK_SUCCESS) {
                 return -1; // failed to create framebuffer
             }
-            data.image_datas.get(i).setFrameBuffer(p_framebuffer[0]);
+            data.image_datas.get(i).setFrameBuffer(init,p_framebuffer[0]);
         }
         return 0;
     }
@@ -451,7 +553,7 @@ public class Triangle {
             return -1; // failed to allocate command buffers;
         }
         for (int i = 0; i < commandBuffers.size(); i++) {
-            data.image_datas.get(i).setCommandbuffer(commandBuffers.get(i));
+            data.image_datas.get(i).setCommandbuffer(init,data,commandBuffers.get(i));
         }
 
         for (int i = 0; i < data.image_datas.size(); i++) {
@@ -477,17 +579,30 @@ public class Triangle {
             render_pass_info.renderPass( data.render_pass[0]);
             render_pass_info.framebuffer( imageData.framebuffer);
             VkOffset2D dummy = VkOffset2D.create();dummy.x( 0); dummy.y( 0);
-            render_pass_info.renderArea().offset( dummy );
-            render_pass_info.renderArea().extent( init.swapchain.extent);
-            VkClearValue.Buffer clearColor = VkClearValue.create(1);
+            VkRect2D area = VkRect2D.create();
+            area.offset( dummy);
+            area.extent( init.swapchain.extent);
+            render_pass_info.renderArea(area);
+//            render_pass_info.renderArea().offset( dummy );
+//            render_pass_info.renderArea().extent( init.swapchain.extent);
+
+            VkClearValue.Buffer clearValues = VkClearValue.create(/*1*/2);
+
             VkClearColorValue dummy2 = VkClearColorValue.create();
             dummy2.float32(0,0.0f);
             dummy2.float32(1,0.0f);
             dummy2.float32(2,0.0f);
             dummy2.float32(3,1.0f);
-            clearColor.get(0).color(dummy2);
+            clearValues.get(0).color(dummy2);
+
+        //clear depth at 1
+        final VkClearValue depthClear = VkClearValue.create();
+        depthClear.depthStencil().depth ( 1.f);
+        clearValues.put(1, depthClear);
+
             //render_pass_info.clearValueCount( 1); java port
-            render_pass_info.pClearValues ( clearColor);
+
+            render_pass_info.pClearValues ( clearValues);
 
             final VkViewport.Buffer viewport = VkViewport.create(1);
             viewport.x( 0.0f);
@@ -657,6 +772,17 @@ public class Triangle {
         return 0;
     }
 
+    public static void clean_depth_image(final Init init, final RenderData data) {
+        if(data.depth_image_view[0] != 0)
+            vkDestroyImageView(init.device.device[0], data.depth_image_view[0], null);
+        if(data.depthImage._image != 0)
+            vmaDestroyImage(init.allocator, data.depthImage._image, data.depthImage._allocation);
+
+        data.depth_image_view[0] = 0;
+        data.depthImage._image = 0;
+        data.depthImage._allocation = 0;
+    }
+
     public static void cleanup(final Init init, final RenderData data) {
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             init.arrow_operator().vkDestroySemaphore.invoke (init.device.device[0], data.finished_semaphore.get(i)[0], null);
@@ -664,11 +790,12 @@ public class Triangle {
             init.arrow_operator().vkDestroyFence.invoke (init.device.device[0], data.in_flight_fences.get(i)[0], null);
         }
 
-        init.arrow_operator().vkDestroyCommandPool.invoke (init.device.device[0], data.command_pool[0], null);
-
         for (var image_data : data.image_datas) {
-            init.arrow_operator().vkDestroyFramebuffer.invoke (init.device.device[0], image_data.framebuffer, null);
+            image_data.destroyFrameBuffer(init);
+            image_data.freeCommandBuffer(init,data);
         }
+
+        init.arrow_operator().vkDestroyCommandPool.invoke (init.device.device[0], data.command_pool[0], null);
 
         init.arrow_operator().vkDestroyPipeline.invoke (init.device.device[0], data.graphics_pipeline[0], null);
         init.arrow_operator().vkDestroyPipelineLayout.invoke (init.device.device[0], data.pipeline_layout[0], null);
@@ -677,6 +804,10 @@ public class Triangle {
         for(ImageData imageData : data.image_datas) {
             init.swapchain.destroy_image_view(imageData.swapchain_image_view);
         }
+
+        clean_depth_image(init,data);
+
+        vmaDestroyAllocator(init.allocator);
 
         destroy_swapchain (init.swapchain);
         destroy_device (init.device);

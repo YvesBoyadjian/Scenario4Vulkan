@@ -12,6 +12,7 @@ public class Init {
     public /*VkSurfaceKHR*/long surface;
     public VkbDevice device = new VkbDevice();
     public VkbSwapchain swapchain = new VkbSwapchain();
+    public long allocator;
 
     public VulkanLibrary arrow_operator() {
         return vk_lib;

@@ -54,11 +54,20 @@ import jscenegraph.database.inventor.misc.SoState;
 import jscenegraph.port.Ctx;
 import jscenegraph.port.GLXContext;
 import org.lwjgl.vulkan.VKCapabilitiesDevice;
+import org.lwjgl.vulkan.VkCommandBuffer;
+import org.lwjgl.vulkan.VkFenceCreateInfo;
 import org.lwjgl.vulkan.awt.VKData;
+import vkbootstrap.example.ImageData;
+import vkbootstrap.example.Init;
+import vkbootstrap.example.RenderData;
+import vkbootstrap.example.Renderer;
+import vulkanguide.VkInit;
 import vulkanguide.VulkanEngine;
 
 import java.awt.*;
 import java.awt.event.ComponentEvent;
+
+import static org.lwjgl.vulkan.VK10.*;
 
 /**
  * @author Yves Boyadjian
@@ -246,6 +255,36 @@ processSoEvent(final SoEvent event)
     	soQtSceneHandler.paintScene();
         initialRendering = false;    	
     }
+
+	final VulkanEngine engine = new VulkanEngine();
+
+	public void paintVK(VulkanState vkState) {
+
+		Renderer renderer = new Renderer() {
+			@Override
+			public int render(Init init, RenderData data, ImageData imageData) {
+
+				init.arrow_operator().vkCmdBindPipeline.invoke (imageData.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, data.graphics_pipeline[0]);
+
+				init.arrow_operator().vkCmdDraw.invoke (imageData.command_buffer, 3, 1, 0, 0);
+				return 0;
+			}
+		};
+
+		renderer = new Renderer() {
+			@Override
+			public int render(Init init, RenderData data, ImageData imageData) {
+				VkCommandBuffer cmd = imageData.command_buffer;
+				engine.draw_objects(cmd, engine._renderables/*.data()*/, engine._renderables.size());
+				return 0;
+			}
+		};
+
+		vkState.draw_VK(renderer);
+		//soQtSceneHandler.paintScene();
+		initialRendering = false;
+	}
+
     public void initializeGL(GL2 gl2) {
         super.initializeGL(gl2);
         Ctx.addContext(1, gl2);
@@ -253,9 +292,52 @@ processSoEvent(final SoEvent event)
         soQtSceneHandler.initializeScene(/*getShareID()*/shareID);
         isGLinitialized = true;    	
     }
+	public void initializeVK(VulkanState vulkanState) {
+		super.initializeVK(vulkanState);
+		//Ctx.addContext(1, vulkanState);
+		shareID = 1;
+		soQtSceneHandler.initializeScene(/*getShareID()*/shareID);
+		isGLinitialized = true;
+
+		engine._chosenGPU = vulkanState.getInit().device.physical_device.physical_device;
+		engine._device = vulkanState.getInit().device.device[0];
+		engine._instance = vulkanState.getInstance();
+		engine._renderPass[0] = vulkanState.getData().render_pass[0];
+		engine._uploadContext._commandPool[0] = vulkanState.getData().command_pool[0];
+		engine._graphicsQueue = vulkanState.getData().graphics_queue;
+
+		VkFenceCreateInfo uploadFenceCreateInfo = VkInit.fence_create_info();
+
+		engine.VK_CHECK(vkCreateFence(engine._device, uploadFenceCreateInfo, null, engine._uploadContext._uploadFence));
+		engine._mainDeletionQueue.push_function(() -> {
+			vkDestroyFence(engine._device, engine._uploadContext._uploadFence[0], null);
+		});
+
+		engine.init_allocator();
+
+		engine.init_depth_image();
+
+		engine.init_descriptors();
+
+		engine.init_pipelines();
+
+		engine.load_images();
+
+		engine.load_meshes();
+
+		engine.init_scene();
+
+		//everything went fine
+		engine._isInitialized = true;
+
+		vulkanState.addCleaner(engine::cleanup_light);
+	}
     public void resizeGL (GL2 gl2, int width, int height) {
         super.resizeGL (gl2, width, height);
-        soQtSceneHandler.resizeScene(width, height, getGlxDevicePixelRatio());    	
+        soQtSceneHandler.resizeScene(width, height, getGlxDevicePixelRatio());
+
+//		engine._windowExtent.width(width);
+//		engine._windowExtent.height(height);
     }
  
     //! overriden from SoQtSceneHandler

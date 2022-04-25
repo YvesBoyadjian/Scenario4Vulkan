@@ -282,7 +282,8 @@ public class VkInit {
         return info;
     }
 
-    /*253*/static VkPipelineDepthStencilStateCreateInfo depth_stencil_create_info(boolean bDepthTest, boolean bDepthWrite, /*VkCompareOp*/int compareOp)
+    /*253*/
+    public static VkPipelineDepthStencilStateCreateInfo depth_stencil_create_info(boolean bDepthTest, boolean bDepthWrite, /*VkCompareOp*/int compareOp)
     {
         final VkPipelineDepthStencilStateCreateInfo info = VkPipelineDepthStencilStateCreateInfo.create();
         info.sType ( VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);

@@ -14,7 +14,7 @@ public class VkbSwapchain {
     public /*VkSwapchainKHR*/final long[] swapchain = new long[1];//VK_NULL_HANDLE;
     public int image_count = 0;
     public /*VkFormat*/int image_format = VK_FORMAT_UNDEFINED;
-    public VkExtent2D extent = VkExtent2D.create();
+    public final VkExtent2D extent = VkExtent2D.create();
     VkAllocationCallbacks allocation_callbacks = null;//VK_NULL_HANDLE;
 
     /*1741*/

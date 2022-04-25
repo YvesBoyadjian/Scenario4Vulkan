@@ -256,9 +256,17 @@ public /*GLData*/Object format()
     //! redirected from the real QGLWidget
     public void initializeGL(GL2 gl2) {
         gl2.glEnable(GL2.GL_DEPTH_TEST);  
-    }    
+    }
+
+    public void initializeVK(VulkanState vkState) {
+		vulkanState.init_VK();
+	}
     
     public void paintGL(GL2 gl2) {}
+
+	public void paintVK(VulkanState vkState) {
+	}
+
     public void resizeGL (GL2 gl2, int width, int height) {}
     
     // to be implemented by subclasses

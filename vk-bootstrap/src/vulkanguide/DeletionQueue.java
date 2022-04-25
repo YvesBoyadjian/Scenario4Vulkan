@@ -8,7 +8,7 @@ import java.util.List;
 public class DeletionQueue {
     public final Deque<Runnable> deletors = new ArrayDeque<>();
 
-    void push_function(Runnable function) {
+    public void push_function(Runnable function) {
         deletors.push(function);
     }
 

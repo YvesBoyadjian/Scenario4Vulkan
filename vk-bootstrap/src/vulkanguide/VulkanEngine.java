@@ -173,7 +173,7 @@ public class VulkanEngine {
         //everything went fine
         _isInitialized = true;
     }
-    /*77*/ void cleanup()
+    /*77*/public void cleanup()
     {
         if (_isInitialized) {
 
@@ -190,6 +190,25 @@ public class VulkanEngine {
 
             //SDL_DestroyWindow(_window);
             destroy_window_glfw (_window);
+        }
+    }
+    /*77*/public void cleanup_light()
+    {
+        if (_isInitialized) {
+
+            //make sure the gpu has stopped doing its things
+            vkDeviceWaitIdle(_device);
+
+            _mainDeletionQueue.flush();
+
+            //KHRSurface.vkDestroySurfaceKHR(_instance, _surface[0], null);
+
+            //vkDestroyDevice(_device, null);
+            //VkBootstrap.destroy_debug_utils_messenger(_instance, _debug_messenger);
+            //vkDestroyInstance(_instance, null);
+
+            //SDL_DestroyWindow(_window);
+            //destroy_window_glfw (_window);
         }
     }
 
@@ -404,6 +423,15 @@ public class VulkanEngine {
 
         _graphicsQueueFamily = vkbDevice.get_queue_index(VkbQueueType.graphics).value();
 
+        init_allocator();
+
+        vkGetPhysicalDeviceProperties(_chosenGPU, _gpuProperties);
+
+        System.out.println( "The gpu has a minimum buffer alignement of " + _gpuProperties.limits().minUniformBufferOffsetAlignment() );
+
+    }
+
+    public void init_allocator() {
         //initialize the memory allocator
         VmaAllocatorCreateInfo allocatorInfo = VmaAllocatorCreateInfo.create();
         allocatorInfo.physicalDevice( _chosenGPU );
@@ -420,26 +448,21 @@ public class VulkanEngine {
         memFree(pb);
 
         _mainDeletionQueue.push_function(() -> {
-        vmaDestroyAllocator(_allocator);
-    });
-
-        vkGetPhysicalDeviceProperties(_chosenGPU, _gpuProperties);
-
-        System.out.println( "The gpu has a minimum buffer alignement of " + _gpuProperties.limits().minUniformBufferOffsetAlignment() );
+            vmaDestroyAllocator(_allocator);
+        });
 
     }
 
-    /*290*/ public void init_swapchain()
-    {
-        final VkbSwapchainBuilder swapchainBuilder = new VkbSwapchainBuilder(_chosenGPU,_device,_surface[0] );
+    /*290*/ public void init_swapchain() {
+        final VkbSwapchainBuilder swapchainBuilder = new VkbSwapchainBuilder(_chosenGPU, _device, _surface[0]);
 
         VkbSwapchain vkbSwapchain = swapchainBuilder
-            .use_default_format_selection()
-            //use vsync present mode
-            .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
-            .set_desired_extent(_windowExtent.width(), _windowExtent.height())
-            .build()
-            .value();
+                .use_default_format_selection()
+                //use vsync present mode
+                .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
+                .set_desired_extent(_windowExtent.width(), _windowExtent.height())
+                .build()
+                .value();
 
         //store swapchain and its related images
         _swapchain = vkbSwapchain.swapchain[0];
@@ -449,8 +472,13 @@ public class VulkanEngine {
         _swachainImageFormat = vkbSwapchain.image_format;
 
         _mainDeletionQueue.push_function(() -> {
-        vkDestroySwapchainKHR(_device, _swapchain, null);
-    });
+            vkDestroySwapchainKHR(_device, _swapchain, null);
+        });
+
+        init_depth_image();
+    }
+    public void init_depth_image()
+    {
 
         //depth image size will match the window
         final VkExtent3D depthImageExtent = VkExtent3D.create();
@@ -887,7 +915,8 @@ public class VulkanEngine {
         return true;
     }
 
-    /*762*/ void load_meshes()
+    /*762*/
+    public void load_meshes()
     {
         final Mesh triMesh = new Mesh();
         //make the array 3 vertices long
@@ -928,7 +957,8 @@ public class VulkanEngine {
         _meshes.put("empire", lostEmpire);
     }
 
-    /*796*/ void load_images()
+    /*796*/
+    public void load_images()
     {
         final Texture lostEmpire = new Texture();
 
@@ -1055,7 +1085,8 @@ public class VulkanEngine {
         return _meshes.get(name);
     }
 
-    /*914*/ void draw_objects(VkCommandBuffer cmd, List<RenderObject> first, int count)
+    /*914*/
+    public void draw_objects(VkCommandBuffer cmd, List<RenderObject> first, int count)
     {
         //make a model view matrix for rendering the object
         //camera view
@@ -1171,7 +1202,8 @@ public class VulkanEngine {
         return alignedSize;
     }
 
-    /*1017*/ void init_scene()
+    /*1017*/
+    public void init_scene()
     {
         final RenderObject monkey = new RenderObject();
         monkey.mesh = get_mesh("monkey");

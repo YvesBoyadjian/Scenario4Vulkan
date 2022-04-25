@@ -2,6 +2,7 @@ package vkbootstrap.example;
 
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkQueue;
+import vulkanguide.AllocatedImage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +12,9 @@ public class RenderData {
     public VkQueue present_queue;
 
     public final List<ImageData> image_datas = new ArrayList<>();
+
+    public final long[] depth_image_view = new long[1];
+    public final AllocatedImage depthImage = new AllocatedImage();
 
     public /*VkRenderPass*/final long[] render_pass = new long[1];
     public /*VkPipelinLayout*/final long[] pipeline_layout = new long[1];
