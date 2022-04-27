@@ -707,7 +707,12 @@ public void doRendering()
     } else {
         // ??? this should match the SoQtRenderArea::actualRedraw()
         // ??? method exactly (apart for not clearing the z-buffer)
-    	getSceneHandler().getSceneManager().render(getSceneHandler().isClearBeforeRender(), ! isZbufferOff());
+		if(getAPI() == API.OpenGL) {
+			getSceneHandler().getSceneManager().render(getSceneHandler().isClearBeforeRender(), !isZbufferOff());
+		}
+		else if(getAPI() == API.Vulkan) {
+			getSceneHandler().getSceneManager().renderVk(getSceneHandler().isClearBeforeRender(), !isZbufferOff());
+		}
     }
 }
 

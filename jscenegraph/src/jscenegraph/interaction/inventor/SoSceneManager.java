@@ -19,6 +19,7 @@ import jscenegraph.database.inventor.SbViewportRegion;
 import jscenegraph.database.inventor.SoDB;
 import jscenegraph.database.inventor.actions.SoGLRenderAction;
 import jscenegraph.database.inventor.actions.SoHandleEventAction;
+import jscenegraph.database.inventor.actions.SoVkRenderAction;
 import jscenegraph.database.inventor.events.SoEvent;
 import jscenegraph.database.inventor.fields.SoSFTime;
 import jscenegraph.database.inventor.nodes.SoNode;
@@ -44,6 +45,7 @@ public class SoSceneManager {
     private boolean raCreatedHere;
     private boolean heaCreatedHere;
   	private SoGLRenderAction renderAction;
+	private SoVkRenderAction vkRenderAction;
     private SoHandleEventAction handleEventAction;
  	private SoNode scene;
 	private SoNodeSensor sceneSensor;
@@ -92,6 +94,7 @@ public class SoSceneManager {
          scene           = null;
          raCreatedHere   = true;
          renderAction    = new SoGLRenderAction(new SbViewportRegion(new SbVec2s((short)1,(short)1)));
+		 vkRenderAction    = new SoVkRenderAction(new SbViewportRegion(new SbVec2s((short)1,(short)1)));
          heaCreatedHere  = true;
          handleEventAction = new SoHandleEventAction(new SbViewportRegion(new SbVec2s((short)1,(short)1)));
          renderCB        = null;
@@ -147,15 +150,6 @@ public void getAntialiasing(final boolean[] smoothing, final int[] numPasses)
 
      
     
- 	/**
-	 * Apply an SoGLRenderAction to the scene graph managed here. 
-	 * The caller is responsible for setting up a window to render into. 
-	 * If clearWindow is true, this clears the graphics window before rendering. 
-	 * If clearZbuffer is true, the z buffer will be cleared before rendering. 
-	 * 
-	 * @param clearWindow
-	 * @param clearZbuffer
-	 */
 	 ////////////////////////////////////////////////////////////////////////
 	   //
 	   // This routine is called to render the scene graph.
@@ -168,7 +162,16 @@ public void getAntialiasing(final boolean[] smoothing, final int[] numPasses)
 		   render(clearWindow,true);
 	   }
 
-     
+	/**
+	 * Apply an SoGLRenderAction to the scene graph managed here.
+	 * The caller is responsible for setting up a window to render into.
+	 * If clearWindow is true, this clears the graphics window before rendering.
+	 * If clearZbuffer is true, the z buffer will be cleared before rendering.
+	 *
+	 * @param clearWindow
+	 * @param clearZbuffer
+	 */
+
      public void
 	   render(boolean clearWindow, boolean clearZbuffer)
 	   //
@@ -239,7 +242,109 @@ public void getAntialiasing(final boolean[] smoothing, final int[] numPasses)
 	       if (updateRealTime)
 	           realTimeSensor.schedule();
 	   }
-	   
+
+	////////////////////////////////////////////////////////////////////////
+	//
+	// This routine is called to render the scene graph.
+	// A window MUST be set before this is called.
+	//
+	// use: public
+	//
+	public void // java port
+	renderVk(boolean clearWindow) {
+		renderVk(clearWindow,true);
+	}
+
+	/**
+	 * Apply an SoGLRenderAction to the scene graph managed here.
+	 * The caller is responsible for setting up a window to render into.
+	 * If clearWindow is true, this clears the graphics window before rendering.
+	 * If clearZbuffer is true, the z buffer will be cleared before rendering.
+	 *
+	 * @param clearWindow
+	 * @param clearZbuffer
+	 */
+
+	public void
+	renderVk(boolean clearWindow, boolean clearZbuffer)
+	//
+	////////////////////////////////////////////////////////////////////////
+	{
+		GL2 gl = getGL();
+		// reinitialize if necessary
+		if (graphicsInitNeeded) {
+
+			final int[] numBits = new int[1];
+			int err =GL_NO_ERROR;
+			do {
+				//err = glGetError();
+			} while(err != GL_NO_ERROR && err != GL_INVALID_OPERATION);
+			//gl.glGetIntegerv(GL_DEPTH_BITS, numBits,0);
+//			if(glGetError()!=GL_NO_ERROR) {
+//				numBits[0] = gl.glGetFramebufferAttachmentParameteriv(GL_DRAW_FRAMEBUFFER, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE);
+//			}
+			numBits[0] = 8;
+			needZbuffer = (numBits[0] != 0); // FALSE for overlay windows !
+			if (needZbuffer) {
+//				gl.glDepthFunc(GL_LEQUAL); // needed for hidden line rendering
+			}
+			graphicsInitNeeded = false;
+		}
+
+		//
+		// when the window changes size, we need to call glViewport() before
+		// we can do a color clear.
+		//
+		if (needToSendVP) {
+			final SbViewportRegion theRegion = renderAction.getViewportRegion();
+			SbVec2s size   = theRegion.getViewportSizePixels();
+			SbVec2s origin = theRegion.getViewportOriginPixels();
+//			gl.glViewport(origin.operator_square_bracket(0), origin.operator_square_bracket(1), size.operator_square_bracket(0), size.operator_square_bracket(1));
+			needToSendVP = false;
+		}
+
+		//
+		// clear to the background color and clear the zbuffer
+		//
+		if (clearWindow) {
+			if (rgbMode) {
+//				gl.glClearColor(bkgColor.operator_square_bracket(0), bkgColor.operator_square_bracket(1), bkgColor.operator_square_bracket(2), 0);
+			}
+			else {
+//				gl.glClearIndex(bkgIndex);
+			}
+
+			// clear the color+zbuffer at the same time if we can
+			if (needZbuffer && clearZbuffer) {
+//				gl.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			}
+			else {
+//				gl.glClear(GL_COLOR_BUFFER_BIT);
+			}
+		}
+		// check to see if only the zbuffer is needed...
+		else if (needZbuffer && clearZbuffer) {
+//			gl.glClear(GL_DEPTH_BUFFER_BIT);
+		}
+
+		// render the scene graph!
+		if (scene != null) {
+			vkRenderAction.apply(scene);
+		}
+
+		// sensor doesn't need to fire again if it's still scheduled
+		sceneSensor.unschedule();
+
+		// schedule the realTime One shot sensor to update the real time
+		// as soon as we can now that we have rendered the scene. This will
+		// enable us to render things that are animating with a consistent
+		// time across mutiple renderAreas, while providing the maximum
+		// optainable frame rate (much better than a hard coded 30 or 60
+		// times/sec timer sensor).
+		if (updateRealTime)
+			realTimeSensor.schedule();
+	}
+
 	  	/**
 	  	 * Process the passed event by applying an SoHandleEventAction 
 	  	 * to the scene graph managed here. 
@@ -506,12 +611,16 @@ sceneSensorCallback(SoSceneManager mgr, SoSensor sensor)
 	           sceneSensor.setFunction(null);
 	       }
 	   }
-	   	
-	
+
+
 	public SoGLRenderAction getGLRenderAction() {
 		 return renderAction; 
 	}
-	
+
+	public SoVkRenderAction getVkRenderAction() {
+		return vkRenderAction;
+	}
+
 	protected boolean isActive() {
 		return active;
 	}
@@ -541,7 +650,10 @@ public void destructor()
     if (raCreatedHere) {
         renderAction.destructor(); renderAction = null;
     }
-    if (heaCreatedHere) {
+
+	vkRenderAction.destructor(); vkRenderAction = null;
+
+	if (heaCreatedHere) {
         handleEventAction.destructor(); handleEventAction = null;
     }
     // detach the scene

@@ -280,7 +280,17 @@ processSoEvent(final SoEvent event)
 			}
 		};
 
+		renderer = new Renderer() {
+			@Override
+			public int render(Init init, RenderData data, ImageData imageData) {
+				soQtSceneHandler.paintSceneVk();
+				return 0;
+			}
+		};
+
 		vkState.draw_VK(renderer);
+//		getSceneHandler().getSceneGraph().touch();//render();
+		//engine._frameNumber++;
 		//soQtSceneHandler.paintScene();
 		initialRendering = false;
 	}
@@ -366,25 +376,28 @@ processSoEvent(final SoEvent event)
     }
 
 
-public boolean setAntialiasing (boolean smoothing, int numPasses)
-{
-    if (getSceneHandler().setAntialiasing(smoothing, numPasses)) {
+	public boolean setAntialiasing (boolean smoothing, int numPasses)
+	{
+		if (getSceneHandler().setAntialiasing(smoothing, numPasses)) {
 
-    	if (format() instanceof GLData) {
-			GLData format = (GLData)this.format();
-			int bits = smoothing ? 5 : 0;
-			if (format.accumGreenSize != bits) {
-				format.accumAlphaSize = bits;
-				format.accumBlueSize = bits;
-				format.accumGreenSize = bits;
-				format.accumRedSize = bits;
-				setFormat(format);
+			if (format() instanceof GLData) {
+				GLData format = (GLData)this.format();
+				int bits = smoothing ? 5 : 0;
+				if (format.accumGreenSize != bits) {
+					format.accumAlphaSize = bits;
+					format.accumBlueSize = bits;
+					format.accumGreenSize = bits;
+					format.accumRedSize = bits;
+					setFormat(format);
+				}
 			}
+			return true;
+		} else {
+		  return false;
 		}
-        return true;
-    } else {
-      return false;
-    }
-}
+	}
 
+	public API getAPI() {
+    	return api;
+	}
 }

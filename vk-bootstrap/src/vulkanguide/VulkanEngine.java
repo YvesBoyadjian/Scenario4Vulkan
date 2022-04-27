@@ -1111,7 +1111,7 @@ public class VulkanEngine {
 
         vmaUnmapMemory(_allocator, get_current_frame().cameraBuffer._allocation);
 
-        float framed = (_frameNumber / 120.f);
+        double framed = ((double)System.currentTimeMillis())/1000.0;//_frameNumber / 120.f;
 
         _sceneParameters.ambientColor.set(new Vector4f( (float)sin(framed),0,(float)cos(framed),1 ));
 
@@ -1217,7 +1217,7 @@ public class VulkanEngine {
         map.material = get_material("texturedmesh");
         map.transformMatrix.set( new Matrix4f().translate(new Vector3f( 5,-10,0 ))); //glm::mat4{ 1.0f };
 
-        _renderables.add(map);
+        //_renderables.add(map);
 
         for (int x = -20; x <= 20; x++) {
             for (int y = -20; y <= 20; y++) {

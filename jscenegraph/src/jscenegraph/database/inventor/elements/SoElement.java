@@ -395,6 +395,7 @@ private        int                 depth;
 		       SoElement.initClass(SoGLCoordinateElement.class);
 		       SoDrawStyleElement.initClass(SoGLDrawStyleElement.class);
 		       SoElement.initClass(SoGLLazyElement.class);
+				SoElement.initClass(SoVkLazyElement.class);
 		       SoGLLightIdElement.initClass(SoGLLightIdElement.class);
 		       SoLinePatternElement.initClass(SoGLLinePatternElement.class);
 		       SoLineWidthElement.initClass(SoGLLineWidthElement.class);

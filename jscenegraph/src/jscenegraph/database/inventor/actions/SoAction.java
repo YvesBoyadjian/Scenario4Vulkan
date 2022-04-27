@@ -1728,7 +1728,7 @@ hasTerminated()
 	    	        SoAction.initClass();
 	    	    
 	    	        SoCallbackAction.initClass();
-	    	        SoGLRenderAction.initClass();
+	    	        SoGLRenderAction.initClass(); SoVkRenderAction.initClass();
 	    	        SoGetBoundingBoxAction.initClass();
 	    	        SoGetMatrixAction.initClass();
 	    	        SoGetPrimitiveCountAction.initClass();

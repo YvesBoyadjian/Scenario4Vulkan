@@ -52,6 +52,201 @@
  _______________________________________________________________________
  */
 
+/**************************************************************************\
+ * Copyright (c) Kongsberg Oil & Gas Technologies AS
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ * Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
+ *
+ * Neither the name of the copyright holder nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ \**************************************************************************/
+
+/*!
+  \class SoNode SoNode.h Inventor/nodes/SoNode.h
+  \brief The SoNode class is the base class for nodes used in scene graphs.
+
+  \ingroup coin_nodes
+
+  Coin is a \e retained \e mode 3D visualization library (built on top
+  of the \e immediate \e mode OpenGL library). "Retained mode" means
+  that instead of passing commands to draw graphics primitives
+  directly to the renderer, you build up data structures which are
+  rendered by the library \e on \e demand.
+
+  The node classes are the main "primitive" for building these data
+  structures. In Coin, you build tree hierarchies made up of different
+  node types: group nodes (for the tree structure layout of the other
+  nodes), appearance nodes (for setting up materials, textures, etc),
+  shape nodes (for the actual geometry), and nodes for lighting and
+  camera positioning.
+
+  One common issue with newcomers to the API is that you should not
+  and cannot use the C++ delete operator on nodes -- the destructor
+  is protected. This is because node instances are using a common
+  technique for memory resource handling called "reference
+  counting". Nodes are deleted (actually, they delete themselves) when
+  their unref() method is called and the reference count goes to zero.
+
+  One important side-effect of this is that SoNode-derived classes
+  should \e not be statically allocated, neither in static module
+  memory nor on functions stack frames. SoNode-derived classes must
+  \e always be allocated dynamically from the memory heap with the \c
+  new operator (or else the scheme with self-destruction upon
+  dereferencing to 0 would not work).
+
+
+  Usually application programmers won't manually ref() and unref()
+  nodes a lot, because you pass the nodes directly to
+  SoGroup::addChild() or So\@Gui\@Viewer\::setSceneGraph() or something
+  similar.  These functions will ref() the nodes they are passed, and
+  unref() them when they are finished with them.
+
+  Make sure you do ref() nodes that you keep pointers to so they
+  aren't accidentally deleted prematurely due to an unref() call from
+  within the library itself.  If you haven't manually called ref() on
+  a top level root node, it will then be deleted automatically. This
+  code shows how to do it:
+
+  \code
+  SoSeparator * root = new SoSeparator; // root's refcount starts out at zero
+  root->addChild(foo_node); // foo_node refcount is increased by 1
+  root->addChild(bar_node); // bar_node refcount +1
+
+  // increase refcount before passing it to setScenegraph(), to avoid
+  // premature destruction
+  root->ref();
+
+  myviewer->setSceneGraph(root); // root's refcount +1, is now 2
+
+  // [misc visualization and processing]
+
+  // myviewer will let go of its reference to the root node, thereby
+  // decreasing its reference count by 1
+  myviewer->setSceneGraph(NULL);
+
+  // root's refcount goes from +1 to 0, and it will self-destruct controllably
+  root->unref();
+  // avoid dangling pointer, in case "root" is attempted used again
+  // (not really necessary, but good for smoking out bugs early)
+  root = NULL;
+  \endcode
+
+  For full information and tutorial-style introductions to all API
+  issues, see the "Inventor Mentor: Programming Object-Oriented 3D
+  Graphics with Open Inventor" (ISBN 0-201-62495-8). It has detailed
+  explanations on all the basic principles involved.
+
+  See specifically the section "References and Deletion" in Chapter 3
+  to learn about the reference counting techniques.
+
+
+  Often when using the Coin library, one is interested in making
+  extensions to it. Of particular interest is setting up extension
+  nodes, which are then traversed, rendered and otherwise used by the
+  rest of the library as any internal node.
+
+  The Coin header file Inventor/nodes/SoSubNode.h includes a set of
+  convenience macros for quick and easy construction of extension
+  nodes. Here's a complete snippet of code which shows how to set up a
+  skeleton framework for an extension node class:
+
+  \code
+  #include <Inventor/nodes/SoWWWInline.h>
+
+  //// Definition of extension class "MyWWWInline" ///////////////
+
+  class MyWWWInline : public SoWWWInline {
+    SO_NODE_HEADER(MyWWWInline);
+
+  public:
+    static void initClass(void);
+    MyWWWInline(void);
+
+  protected:
+    virtual ~MyWWWInline();
+  };
+
+  //// Implementation of extension class "MyWWWInline" ///////////
+
+  SO_NODE_SOURCE(MyWWWInline);
+
+  MyWWWInline::MyWWWInline(void)
+  {
+    SO_NODE_CONSTRUCTOR(MyWWWInline);
+  }
+
+  MyWWWInline::~MyWWWInline()
+  {
+  }
+
+  void
+  MyWWWInline::initClass(void)
+  {
+    SO_NODE_INIT_CLASS(MyWWWInline, SoWWWInline, "SoWWWInline");
+  }
+
+  //// main //////////////////////////////////////////////////////
+
+  int
+  main(int argc, char ** argv)
+  {
+    SoDB::init();
+    MyWWWInline::initClass();
+
+    // [...]
+
+    return 0;
+  }
+  \endcode
+
+  You can then override for instance the GLRender() method to have
+  your new class render OpenGL geometry different from its
+  superclass.
+
+  \TOOLMAKER_REF
+
+  For information about dynamic loading of extension nodes, see the
+  documentation of SoType::fromName().
+*/
+
+/*!
+\class SbUniqueId SbBasic.h Inventor/SbBasic.h
+\brief SbUniqueId is an integer type for node identifiers.
+
+\ingroup coin_base
+
+SbUniqueId is meant to be a "32/64 bit portable" way of defining an
+integer type that is used for storing unique node identifiers.
+
+SbUniqueId is not really a class, just a \c typedef.
+*/
+
+
+// *************************************************************************
+
 package jscenegraph.database.inventor.nodes;
 
 import java.lang.reflect.InvocationTargetException;
@@ -67,18 +262,8 @@ import jscenegraph.database.inventor.SoDB;
 import jscenegraph.database.inventor.SoInput;
 import jscenegraph.database.inventor.SoNodeList;
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.actions.SoActionMethodList.SoActionMethod;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetBoundingBoxAction;
-import jscenegraph.database.inventor.actions.SoGetMatrixAction;
-import jscenegraph.database.inventor.actions.SoGetPrimitiveCountAction;
-import jscenegraph.database.inventor.actions.SoHandleEventAction;
-import jscenegraph.database.inventor.actions.SoPickAction;
-import jscenegraph.database.inventor.actions.SoRayPickAction;
-import jscenegraph.database.inventor.actions.SoSearchAction;
-import jscenegraph.database.inventor.actions.SoWriteAction;
 import jscenegraph.database.inventor.elements.SoCacheElement;
 import jscenegraph.database.inventor.elements.SoElement;
 import jscenegraph.database.inventor.errors.SoDebugError;
@@ -774,48 +959,63 @@ doAction(SoAction action)
 	    		   callbackS(soAction, soNode);
 	    	   }
 	       });
+
 	       SoGLRenderAction.addMethod(classTypeId, new SoActionMethod() {
 	    	   @Override
 			public void run(SoAction soAction, SoNode soNode) {
 	    		   GLRenderS(soAction, soNode);
 	    	   }
 	       }            );
+
+		   SoVkRenderAction.addMethod(classTypeId, new SoActionMethod() {
+			   @Override
+			   public void run(SoAction soAction, SoNode soNode) {
+				   VkRenderS(soAction, soNode);
+			   }
+		   }            );
+
 	       SoGetBoundingBoxAction.addMethod(classTypeId, new SoActionMethod() {
 	    	   @Override
 			public void run(SoAction soAction, SoNode soNode) {
 	    		   getBoundingBoxS(soAction, soNode);
 	    	   }
 	       }      );
+
 	       SoGetMatrixAction.addMethod(classTypeId, new SoActionMethod() {
 	    	   @Override
 			public void run(SoAction soAction, SoNode soNode) {
 	    		   getMatrixS(soAction, soNode);
 	    	   }
 	       }           );
+
 	       SoHandleEventAction.addMethod(classTypeId, new SoActionMethod() {
 	    	   @Override
 			public void run(SoAction soAction, SoNode soNode) {
 	    		   handleEventS(soAction, soNode);
 	    	   }
 	       }         );
+
 	       SoPickAction.addMethod(classTypeId, new SoActionMethod() {
 	    	   @Override
 			public void run(SoAction soAction, SoNode soNode) {
 	    		   pickS(soAction, soNode);
 	    	   }
 	       }                );
+
 	       SoRayPickAction.addMethod(classTypeId, new SoActionMethod() {
 	    	   @Override
 			public void run(SoAction soAction, SoNode soNode) {
 	    		   rayPickS(soAction, soNode);
 	    	   }
 	       }             );
+
 	       SoSearchAction.addMethod(classTypeId, new SoActionMethod() {
 	    	   @Override
 			public void run(SoAction soAction, SoNode soNode) {
 	    		   searchS(soAction, soNode);
 	    	   }
 	       }              );
+
 	       SoWriteAction.addMethod(classTypeId, new SoActionMethod() {
 	    	   @Override
 			public void run(SoAction soAction, SoNode soNode) {
@@ -849,61 +1049,89 @@ doAction(SoAction action)
 
 	  }
 	  
-// Note that this documentation will also be used for all subclasses
-// which reimplements the method, so keep the doc "generic enough".
-/*!
-  Action method for the SoGetPrimitiveCountAction.
+	// Note that this documentation will also be used for all subclasses
+	// which reimplements the method, so keep the doc "generic enough".
+	/*!
+	  Action method for the SoGetPrimitiveCountAction.
 
-  Calculates the number of triangle, line segment and point primitives
-  for the node and adds these to the counters of the \a action.
+	  Calculates the number of triangle, line segment and point primitives
+	  for the node and adds these to the counters of the \a action.
 
-  Nodes influencing how geometry nodes calculates their primitive
-  count also overrides this method to change the relevant state
-  variables.
-*/
-public void
-getPrimitiveCount(SoGetPrimitiveCountAction action)
-{
-}
+	  Nodes influencing how geometry nodes calculates their primitive
+	  count also overrides this method to change the relevant state
+	  variables.
+	*/
+	public void
+	getPrimitiveCount(SoGetPrimitiveCountAction action)
+	{
+	}
 
-	  
-	  
-	  private     static void         GLRenderS(SoAction action, SoNode node) {
+	// *************************************************************************
 
-		     SoGLRenderAction a = (SoGLRenderAction ) action;
+	/*!
+      This is a static "helper" method registered with the action, and
+      used for calling the SoNode::GLRender() virtual method which does
+      the \e real work.
+    */
+	private static void GLRenderS(SoAction action, SoNode node) {
 
-		          if (! a.abortNow()) {
-					node.GLRender(a);
-				} else {
-		              SoCacheElement.invalidate(action.getState());
-		          }
-		     	  }
-	  private     static void         getBoundingBoxS(SoAction action, SoNode node) {
-		     SoGetBoundingBoxAction a = (SoGetBoundingBoxAction )action;
+		SoGLRenderAction a = (SoGLRenderAction) action;
 
-		          a.checkResetBefore();
-		          node.getBoundingBox(a);
-		          a.checkResetAfter();
+		if (!a.abortNow()) {
+			node.GLRender(a);
+		} else {
+			SoCacheElement.invalidate(action.getState());
+		}
+	}
 
-	  }
-	  private     static void         getMatrixS(SoAction action, SoNode node) {
-		  node.getMatrix((SoGetMatrixAction ) action);
-	  }
-	  private     static void         handleEventS(SoAction action, SoNode node) {
-		  node.handleEvent((SoHandleEventAction ) action);
-	  }
-	  private     static void         pickS(SoAction action, SoNode node) {
-		  node.pick((SoPickAction ) action);
-	  }
-	  public     static void         rayPickS(SoAction action, SoNode node) {
-		     node.rayPick((SoRayPickAction ) action);
-	  }
-	  private     static void         searchS(SoAction action, SoNode node) {
-		  node.search((SoSearchAction ) action);
-	  }
-	  private     static void         writeS(SoAction action, SoNode node) {
-		  // not implemented
-	  }
+	/*!
+      This is a static "helper" method registered with the action, and
+      used for calling the SoNode::GLRender() virtual method which does
+      the \e real work.
+    */
+	private static void VkRenderS(SoAction action, SoNode node) {
+
+		SoVkRenderAction a = (SoVkRenderAction) action;
+
+		if (!a.abortNow()) {
+			node.VkRender(a);
+		} else {
+			SoCacheElement.invalidate(action.getState());
+		}
+	}
+
+	private static void getBoundingBoxS(SoAction action, SoNode node) {
+		SoGetBoundingBoxAction a = (SoGetBoundingBoxAction) action;
+
+		a.checkResetBefore();
+		node.getBoundingBox(a);
+		a.checkResetAfter();
+
+	}
+
+	private static void getMatrixS(SoAction action, SoNode node) {
+		node.getMatrix((SoGetMatrixAction) action);
+	}
+
+	private static void handleEventS(SoAction action, SoNode node) {
+		node.handleEvent((SoHandleEventAction) action);
+	}
+
+	private static void pickS(SoAction action, SoNode node) {
+		node.pick((SoPickAction) action);
+	}
+
+	public static void rayPickS(SoAction action, SoNode node) {
+		node.rayPick((SoRayPickAction) action);
+	}
+
+	private static void searchS(SoAction action, SoNode node) {
+		node.search((SoSearchAction) action);
+	}
+
+	private static void writeS(SoAction action, SoNode node) {
+		// not implemented
+	}
 
 //	  protected static SoType SO__NODE_INIT_ABSTRACT_CLASS(Class className, String classPrintName,
 //			  Class<? extends SoBase> parentClass,
@@ -1120,6 +1348,16 @@ grabEventsCleanup()
 //	    #endif /* DEBUG_DEFAULT_METHODS */
 	    }
 
+
+// Note that this documentation will also be used for all subclasses
+// which reimplements the method, so keep the doc "generic enough".
+/*!
+  Action method for the SoGLRenderAction.
+
+  This is called during rendering traversals. Nodes influencing the
+  rendering state in any way or want to throw geometry primitives
+  at OpenGL override this method.
+*/
 	   public void
 	   GLRender(SoGLRenderAction action)
 	    {
@@ -1129,6 +1367,24 @@ grabEventsCleanup()
 //	    #endif /* DEBUG_DEFAULT_METHODS */
 	    }
 
+
+	// Note that this documentation will also be used for all subclasses
+// which reimplements the method, so keep the doc "generic enough".
+/*!
+  Action method for the SoGLRenderAction.
+
+  This is called during rendering traversals. Nodes influencing the
+  rendering state in any way or want to throw geometry primitives
+  at OpenGL override this method.
+*/
+	public void
+	VkRender(SoVkRenderAction action)
+	{
+//	    #ifdef DEBUG_DEFAULT_METHODS
+//	        SoDebugInfo::post("SoNode::GLRender",
+//	                          "Called for %s", getTypeId().getName().getString());
+//	    #endif /* DEBUG_DEFAULT_METHODS */
+	}
 
 public void
 GLRenderBelowPath(SoGLRenderAction action)
