@@ -58,6 +58,7 @@ import jscenegraph.database.inventor.SoType;
 import jscenegraph.database.inventor.actions.SoAction;
 import jscenegraph.database.inventor.actions.SoCallbackAction;
 import jscenegraph.database.inventor.actions.SoGLRenderAction;
+import jscenegraph.database.inventor.actions.SoVkRenderAction;
 import jscenegraph.database.inventor.elements.SoDrawStyleElement;
 import jscenegraph.database.inventor.elements.SoGLDrawStyleElement;
 import jscenegraph.database.inventor.elements.SoGLLinePatternElement;
@@ -314,6 +315,18 @@ public void GLRender(SoGLRenderAction action)
     SoDrawStyle_doAction(action);
 }
 
+////////////////////////////////////////////////////////////////////////
+//
+// Description:
+//    Does Vulkan render action.
+//
+// Use: extender
 
+	public void VkRender(SoVkRenderAction action)
+//
+////////////////////////////////////////////////////////////////////////
+	{
+		SoDrawStyle_doAction(action);
+	}
 
 }

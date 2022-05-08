@@ -4,12 +4,14 @@
 package jscenegraph.coin3d.shaders.inventor.nodes;
 
 import jscenegraph.coin3d.inventor.elements.SoGLMultiTextureMatrixElement;
+import jscenegraph.coin3d.inventor.elements.SoMultiTextureMatrixElement;
 import jscenegraph.coin3d.inventor.elements.SoTextureUnitElement;
 import jscenegraph.coin3d.shaders.SoGLShaderObject;
 import jscenegraph.coin3d.shaders.SoShader;
 import jscenegraph.database.inventor.SbMatrix;
 import jscenegraph.database.inventor.SoType;
 import jscenegraph.database.inventor.actions.SoGLRenderAction;
+import jscenegraph.database.inventor.actions.SoVkRenderAction;
 import jscenegraph.database.inventor.elements.SoModelMatrixElement;
 import jscenegraph.database.inventor.elements.SoProjectionMatrixElement;
 import jscenegraph.database.inventor.elements.SoViewingMatrixElement;
@@ -110,6 +112,12 @@ public static void initClass()
   SO_ENABLE(SoGLRenderAction.class, SoProjectionMatrixElement.class);
   SO_ENABLE(SoGLRenderAction.class, SoGLMultiTextureMatrixElement.class);
   SO_ENABLE(SoGLRenderAction.class, SoTextureUnitElement.class);
+
+    SO_ENABLE(SoVkRenderAction.class, SoModelMatrixElement.class);
+    SO_ENABLE(SoVkRenderAction.class, SoViewingMatrixElement.class);
+    SO_ENABLE(SoVkRenderAction.class, SoProjectionMatrixElement.class);
+    SO_ENABLE(SoVkRenderAction.class, SoMultiTextureMatrixElement.class); // TODO VK
+    SO_ENABLE(SoVkRenderAction.class, SoTextureUnitElement.class);
 }
 
 public SoShaderStateMatrixParameter()

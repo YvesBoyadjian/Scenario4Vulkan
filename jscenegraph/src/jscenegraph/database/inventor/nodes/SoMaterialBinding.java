@@ -56,11 +56,7 @@ package jscenegraph.database.inventor.nodes;
 
 import jscenegraph.database.inventor.SoInput;
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetPrimitiveCountAction;
-import jscenegraph.database.inventor.actions.SoPickAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.elements.SoMaterialBindingElement;
 import jscenegraph.database.inventor.elements.SoOverrideElement;
 import jscenegraph.database.inventor.fields.SoFieldData;
@@ -301,6 +297,21 @@ GLRender(SoGLRenderAction action)
 {
     SoMaterialBinding_doAction(action);
 }
+
+////////////////////////////////////////////////////////////////////////
+//
+// Description:
+//    Does Vulkan render action.
+//
+// Use: extender
+
+	public void
+	VkRender(SoVkRenderAction action)
+//
+////////////////////////////////////////////////////////////////////////
+	{
+		SoMaterialBinding_doAction(action);
+	}
 
 ////////////////////////////////////////////////////////////////////////
 //

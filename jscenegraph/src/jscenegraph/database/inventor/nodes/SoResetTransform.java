@@ -55,12 +55,7 @@
 package jscenegraph.database.inventor.nodes;
 
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetBoundingBoxAction;
-import jscenegraph.database.inventor.actions.SoGetMatrixAction;
-import jscenegraph.database.inventor.actions.SoPickAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.elements.SoGLModelMatrixElement;
 import jscenegraph.database.inventor.elements.SoModelMatrixElement;
 import jscenegraph.database.inventor.fields.SoFieldData;
@@ -225,6 +220,23 @@ public void
     if (! whatToReset.isIgnored() && (whatToReset.getValue() & ResetType.TRANSFORM.getValue())!=0)
         SoGLModelMatrixElement.makeIdentity(action.getState(), this);
 }
+
+////////////////////////////////////////////////////////////////////////
+//
+// Description:
+//    Handles Vulkan render action
+//
+// Use: extender
+
+    public void
+    VkRender(SoVkRenderAction action)
+//
+////////////////////////////////////////////////////////////////////////
+    {
+        // If has effect on transform
+        if (! whatToReset.isIgnored() && (whatToReset.getValue() & ResetType.TRANSFORM.getValue())!=0)
+            SoGLModelMatrixElement.makeIdentity(action.getState(), this);
+    }
 
 ////////////////////////////////////////////////////////////////////////
 //

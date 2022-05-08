@@ -57,12 +57,7 @@ package jscenegraph.database.inventor.nodes;
 import jscenegraph.database.inventor.SbMatrix;
 import jscenegraph.database.inventor.SbRotation;
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetBoundingBoxAction;
-import jscenegraph.database.inventor.actions.SoGetMatrixAction;
-import jscenegraph.database.inventor.actions.SoPickAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.elements.SoModelMatrixElement;
 import jscenegraph.database.inventor.fields.SoFieldData;
 import jscenegraph.database.inventor.fields.SoSFRotation;
@@ -189,6 +184,21 @@ GLRender(SoGLRenderAction action)
 {
     SoRotation_doAction(action);
 }
+
+////////////////////////////////////////////////////////////////////////
+//
+// Description:
+//    Handles Vulkan render action
+//
+// Use: extender
+
+    public void
+    VkRender(SoVkRenderAction action)
+//
+////////////////////////////////////////////////////////////////////////
+    {
+        SoRotation_doAction(action);
+    }
 
 ////////////////////////////////////////////////////////////////////////
 //

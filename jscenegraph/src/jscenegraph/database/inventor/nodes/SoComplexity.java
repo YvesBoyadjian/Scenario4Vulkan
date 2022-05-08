@@ -55,11 +55,7 @@
 package jscenegraph.database.inventor.nodes;
 
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetBoundingBoxAction;
-import jscenegraph.database.inventor.actions.SoPickAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.elements.SoComplexityElement;
 import jscenegraph.database.inventor.elements.SoComplexityTypeElement;
 import jscenegraph.database.inventor.elements.SoOverrideElement;
@@ -301,6 +297,31 @@ GLRender(SoGLRenderAction action)
 
     SoComplexity_doAction(action);
 }
+
+////////////////////////////////////////////////////////////////////////
+//
+// Description:
+//    Does Vulkan render action.
+//
+// Use: extender
+
+    public void
+    VkRender(SoVkRenderAction action)
+//
+////////////////////////////////////////////////////////////////////////
+    {
+        SoState state = action.getState();
+
+        if (! textureQuality.isIgnored()
+                && ! SoTextureOverrideElement.getQualityOverride(state)) {
+            if (isOverride()) {
+                SoTextureOverrideElement.setQualityOverride(state, true);
+            }
+            SoTextureQualityElement.set(state, textureQuality.getValue());
+        }
+
+        SoComplexity_doAction(action);
+    }
 
 ////////////////////////////////////////////////////////////////////////
 //

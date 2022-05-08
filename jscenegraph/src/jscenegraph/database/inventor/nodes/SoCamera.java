@@ -74,14 +74,7 @@ import jscenegraph.database.inventor.SbViewVolume;
 import jscenegraph.database.inventor.SbViewportRegion;
 import jscenegraph.database.inventor.SoPath;
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetBoundingBoxAction;
-import jscenegraph.database.inventor.actions.SoGetMatrixAction;
-import jscenegraph.database.inventor.actions.SoGetPrimitiveCountAction;
-import jscenegraph.database.inventor.actions.SoHandleEventAction;
-import jscenegraph.database.inventor.actions.SoRayPickAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.elements.SoCullElement;
 import jscenegraph.database.inventor.elements.SoDrawStyleElement;
 import jscenegraph.database.inventor.elements.SoFocalDistanceElement;
@@ -308,24 +301,23 @@ pointAt(final SbVec3f targetPoint)
 	   //    sphere.
 	   //
 	   // Use: public
-	   
-	/**
-	 * Sets the camera up to view the scene under the given node or 
-	 * defined by the given path. 
-	 * The near and far clipping planes will be positioned 'slack' 
-	 * bounding sphere radii away from the bounding box's center. 
-	 * A value of 1.0 will make the clipping planes the tightest 
-	 * around the bounding sphere. 
-	 * 
-	 * @param root
-	 * @param vpRegion
-	 * @param slack
-	 */
 	 public void
 	   viewAll(final SoNode root, final SbViewportRegion vpRegion) {
 		 viewAll(root,vpRegion,1.0f);
 	 }
-	  
+
+    /**
+     * Sets the camera up to view the scene under the given node or
+     * defined by the given path.
+     * The near and far clipping planes will be positioned 'slack'
+     * bounding sphere radii away from the bounding box's center.
+     * A value of 1.0 will make the clipping planes the tightest
+     * around the bounding sphere.
+     *
+     * @param root
+     * @param vpRegion
+     * @param slack
+     */
 	
 	  public void
 	   viewAll(final SoNode root, final SbViewportRegion vpRegion, float slack)
@@ -894,6 +886,55 @@ GLRender(SoGLRenderAction action)
     SoGLCacheContextElement.shouldAutoCache(state,
                 SoGLCacheContextElement.AutoCache.DONT_AUTO_CACHE.getValue());
 }
+
+    public void
+    VkRender(SoVkRenderAction action)
+//
+////////////////////////////////////////////////////////////////////////
+    {
+        final SbViewportRegion    croppedReg = new SbViewportRegion();
+        viewVol.constructor();
+        final SbMatrix            viewMat = new SbMatrix(), projMat = new SbMatrix();
+        final SbVec2fSingle             uaOrigin = new SbVec2fSingle(), uaSize = new SbVec2fSingle();
+        final SbVec3f             jitterAmount = new SbVec3f();
+        final boolean[]              changeRegion = new boolean[1];
+        final SoState             state = action.getState();
+
+        // Get the current viewport region
+        final SbViewportRegion vpReg = SoGLViewportRegionElement.get(state);
+
+        // Compute the view volume
+        SoCamera_computeView(vpReg, viewVol, changeRegion);
+
+        // Draw frame, if necessary, using current (full) viewport
+        if (changeRegion[0]) {
+            croppedReg.copyFrom(getViewportBounds(vpReg));
+            //drawFrame(action, vpReg, croppedReg); TODO VK
+        }
+
+        // Jitter the camera for anti-aliasing if doing multiple passes
+        if (action.getNumPasses() > 1)
+            jitter(action.getNumPasses(), SoGLRenderPassElement.get(state),
+                    changeRegion[0] ? croppedReg : vpReg, jitterAmount);
+
+        // Set the state
+        setElements(action, viewVol, changeRegion[0], croppedReg,
+                action.getNumPasses() > 1, jitterAmount);
+
+        // Compute and set culling volume if different from view volume
+//        if (! SoGLUpdateAreaElement.get(state, uaOrigin, uaSize)) { TODO VK
+//            SbViewVolume cvv = viewVol.narrow(uaOrigin.getValue()[0], uaOrigin.getValue()[1],
+//                    uaSize.getValue()[0],   uaSize.getValue()[1]);
+//            SoModelMatrixElement.setCullMatrix(state, this, cvv.getMatrix());
+//        }
+        // Otherwise, just set culling volume to be same as view volume
+//        else
+            SoModelMatrixElement.setCullMatrix(state, this, viewVol.getMatrix());
+
+        // Don't auto-cache above cameras:
+//        SoGLCacheContextElement.shouldAutoCache(state, TODO VK
+//                SoGLCacheContextElement.AutoCache.DONT_AUTO_CACHE.getValue());
+    }
 
 ////////////////////////////////////////////////////////////////////////
 //

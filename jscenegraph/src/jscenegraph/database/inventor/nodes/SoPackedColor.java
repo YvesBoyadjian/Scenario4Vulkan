@@ -58,6 +58,7 @@ import jscenegraph.database.inventor.SoType;
 import jscenegraph.database.inventor.actions.SoAction;
 import jscenegraph.database.inventor.actions.SoCallbackAction;
 import jscenegraph.database.inventor.actions.SoGLRenderAction;
+import jscenegraph.database.inventor.actions.SoVkRenderAction;
 import jscenegraph.database.inventor.elements.SoGLLazyElement;
 import jscenegraph.database.inventor.elements.SoLazyElement;
 import jscenegraph.database.inventor.elements.SoOverrideElement;
@@ -252,6 +253,27 @@ public void GLRender(SoGLRenderAction action)
         SoGLLazyElement.sendAllMaterial(action.getState());
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+//
+// Description:
+//    Performs Vulkan rendering on a packedColor node.
+//
+// Use: extender
+
+    public void VkRender(SoVkRenderAction action)
+//
+////////////////////////////////////////////////////////////////////////
+    {
+        SoPackedColor_doAction(action);
+
+        // If there's only one color, we might as well send it now.  This
+        // prevents cache dependencies in some cases that were
+        // specifically optimized for Inventor 2.0.
+        if (orderedRGBA.getNum() == 1 && !orderedRGBA.isIgnored()) {
+            //SoGLLazyElement.sendAllMaterial(action.getState()); TODO VK
+        }
+    }
 
 ////////////////////////////////////////////////////////////////////////
 //

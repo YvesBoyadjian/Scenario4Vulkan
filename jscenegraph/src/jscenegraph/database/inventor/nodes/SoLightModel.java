@@ -58,6 +58,7 @@ import jscenegraph.database.inventor.SoType;
 import jscenegraph.database.inventor.actions.SoAction;
 import jscenegraph.database.inventor.actions.SoCallbackAction;
 import jscenegraph.database.inventor.actions.SoGLRenderAction;
+import jscenegraph.database.inventor.actions.SoVkRenderAction;
 import jscenegraph.database.inventor.elements.SoGLLazyElement;
 import jscenegraph.database.inventor.elements.SoLazyElement;
 import jscenegraph.database.inventor.elements.SoOverrideElement;
@@ -179,6 +180,9 @@ public class SoLightModel extends SoNode {
     }
     public void        GLRender(SoGLRenderAction action) {
     	 /*SoLightModel.*/doAction(action);
+    }
+    public void        VkRender(SoVkRenderAction action) {
+        /*SoLightModel.*/doAction(action);
     }
     public void        callback(SoCallbackAction action) {
     	 /*SoLightModel.*/doAction(action);

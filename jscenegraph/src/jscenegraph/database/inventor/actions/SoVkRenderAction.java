@@ -7,6 +7,10 @@ import jscenegraph.port.Destroyable;
 
 public class SoVkRenderAction extends SoAction implements Destroyable {
 
+    public int getNumPasses() {
+        return 1;
+    }
+
     //! Possible return codes from a render abort callback
     public enum AbortCode {
         CONTINUE,               //!< Continue as usual

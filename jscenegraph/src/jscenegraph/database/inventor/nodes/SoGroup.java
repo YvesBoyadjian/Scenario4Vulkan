@@ -60,15 +60,7 @@ import jscenegraph.coin3d.misc.SoGL;
 import jscenegraph.database.inventor.SbVec3f;
 import jscenegraph.database.inventor.SoInput;
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetBoundingBoxAction;
-import jscenegraph.database.inventor.actions.SoGetMatrixAction;
-import jscenegraph.database.inventor.actions.SoGetPrimitiveCountAction;
-import jscenegraph.database.inventor.actions.SoHandleEventAction;
-import jscenegraph.database.inventor.actions.SoPickAction;
-import jscenegraph.database.inventor.actions.SoSearchAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.elements.SoCacheElement;
 import jscenegraph.database.inventor.errors.SoDebugError;
 import jscenegraph.database.inventor.fields.SoFieldContainer;
@@ -496,55 +488,6 @@ GLRender(SoGLRenderAction action)
 {
     SoAction.PathCode pathcode = action.getPathCode(numindices, indices);
 
-//    // Perform fast-path GLRender traversal:
-//    if (pc != SoAction.PathCode.IN_PATH) {
-//        action.pushCurPath();
-//        for (int i = 0; i < children.getLength(); i++) {
-//
-//            action.popPushCurPath(i);
-//            if (! action.abortNow())
-//                ((SoNode)(children.get(i))).GLRender(action);
-//            else
-//                SoCacheElement.invalidate(action.getState());
-//
-//            // Stop if action has reached termination condition. (For
-//            // example, search has found what it was looking for, or event
-//            // was handled.)
-//            if (action.hasTerminated())
-//                break;
-//        }
-//        action.popCurPath();
-//    }
-//
-//    else {
-//
-//        // This is the same as SoChildList::traverse(), except that it
-//        // checks render abort for each child
-//
-//        int lastChild = indices[0][numIndices[0] - 1];
-//        for (int i = 0; i <= lastChild; i++) {
-//
-//            SoNode child = (SoNode ) children.get(i);
-//
-//            if (pc == SoAction.PathCode.OFF_PATH && ! child.affectsState())
-//                continue;
-//
-//            action.pushCurPath(i);
-//            if (action.getCurPathCode() != SoAction.PathCode.OFF_PATH ||
-//                child.affectsState()) {
-//
-//                if (! action.abortNow())
-//                    child.GLRender(action);
-//                else
-//                    SoCacheElement.invalidate(action.getState());
-//            }
-//
-//            action.popCurPath(pc);
-//
-//            if (action.hasTerminated())
-//                break;
-//        }
-//    }
     Object[] childarray = (Object[]) this.getChildren().getArrayPtr();
     SoState state = action.getState();
 
@@ -606,6 +549,75 @@ GLRender(SoGLRenderAction action)
       action.popCurPath();
     }
 }
+
+	public void
+	VkRender(SoVkRenderAction action)
+
+////////////////////////////////////////////////////////////////////////
+	{
+		SoAction.PathCode pathcode = action.getPathCode(numindices, indices);
+
+		Object[] childarray = (Object[]) this.getChildren().getArrayPtr();
+		SoState state = action.getState();
+
+		if (pathcode == SoAction.PathCode.IN_PATH) {
+			int lastchild = indices[0][numindices[0] - 1];
+			for (int i = 0; i <= lastchild && !action.hasTerminated(); i++) {
+				SoNode child = (SoNode)childarray[i];
+
+				action.pushCurPath(i, child);
+				if (action.getCurPathCode() != SoAction.PathCode.OFF_PATH ||
+						child.affectsState()) {
+					if (!action.abortNow()) {
+						(SoGroupP.vkrenderfunc).invoke(this, child, action);
+					}
+					else {
+						SoCacheElement.invalidate(state);
+					}
+				}
+				action.popCurPath(pathcode);
+			}
+		}
+		else {
+			action.pushCurPath();
+			int n = this.getChildren().getLength();
+			for (int i = 0; i < n && !action.hasTerminated(); i++) {
+				action.popPushCurPath(i, (SoNode)childarray[i]);
+
+				if (pathcode == SoAction.PathCode.OFF_PATH && !((SoNode)childarray[i]).affectsState()) {
+					continue;
+				}
+
+				if (action.abortNow()) {
+					// only cache if we do a full traversal
+					SoCacheElement.invalidate(state);
+					break;
+				}
+
+				(SoGroupP.vkrenderfunc).invoke(this, (SoNode)childarray[i], action);
+
+				//#if COIN_DEBUG
+				// The GL error test is default disabled for this optimized
+				// path.  If you get a GL error reporting an error in the
+				// Separator node, enable this code by setting the environment
+				// variable COIN_GLERROR_DEBUGGING to "1" to see exactly which
+				// node caused the error.
+				if (chkglerr) {
+					final String[] str = new String[1];
+					//cc_string_construct(str);
+					int errs = Gl.coin_catch_gl_errors(str);
+					if (errs > 0) {
+						SoDebugError.post("SoGroup::GLRender",
+								"glGetError()s => '"+str[0]+"', nodetype: '"+(this.getChildren()).operator_square_bracket(i).getTypeId().getName().getString()+"'");
+					}
+					//cc_string_clean(&str);
+				}
+				//#endif // COIN_DEBUG
+
+			}
+			action.popCurPath();
+		}
+	}
 
 ////////////////////////////////////////////////////////////////////////
 //
@@ -827,6 +839,11 @@ SoGroup_getPrimitiveCount(SoGetPrimitiveCountAction action)
 	        if (SoProfiler.isEnabled()) {
 	          SoGroupP.glrenderfunc = SoGroupP::childGLRenderProfiler;
 	        }
+
+			SoGroupP.vkrenderfunc = SoGroupP::childVkRender;
+			if (SoProfiler.isEnabled()) {
+				SoGroupP.vkrenderfunc = SoGroupP::childVkRenderProfiler;
+			}
 	    }
 	    
 	   }
