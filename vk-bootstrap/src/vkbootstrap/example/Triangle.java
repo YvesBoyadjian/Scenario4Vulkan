@@ -589,9 +589,9 @@ public class Triangle {
             VkClearValue.Buffer clearValues = VkClearValue.create(/*1*/2);
 
             VkClearColorValue dummy2 = VkClearColorValue.create();
-            dummy2.float32(0,0.0f);
-            dummy2.float32(1,0.0f);
-            dummy2.float32(2,0.0f);
+            dummy2.float32(0,init.background_red);
+            dummy2.float32(1,init.background_green);
+            dummy2.float32(2,init.background_blue);
             dummy2.float32(3,1.0f);
             clearValues.get(0).color(dummy2);
 

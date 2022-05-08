@@ -13,8 +13,15 @@ public class Init {
     public VkbDevice device = new VkbDevice();
     public VkbSwapchain swapchain = new VkbSwapchain();
     public long allocator;
+    public float background_red, background_green, background_blue;
 
     public VulkanLibrary arrow_operator() {
         return vk_lib;
+    }
+
+    public void setBackgroundColor(float x, float y, float z) {
+        background_red = x;
+        background_green = y;
+        background_blue = z;
     }
 }

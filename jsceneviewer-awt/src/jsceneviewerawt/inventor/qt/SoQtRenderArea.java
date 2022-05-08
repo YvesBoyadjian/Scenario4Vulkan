@@ -42,6 +42,7 @@
 
 package jsceneviewerawt.inventor.qt;
 
+import jscenegraph.database.inventor.SbColor;
 import jsceneviewerawt.VulkanState;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.awt.GLData;
@@ -259,6 +260,9 @@ processSoEvent(final SoEvent event)
 	final VulkanEngine engine = new VulkanEngine();
 
 	public void paintVK(VulkanState vkState) {
+
+		SbColor backgroundColor = soQtSceneHandler.getSceneManager().getBackgroundColor();
+		vkState.getInit().setBackgroundColor(backgroundColor.getX(),backgroundColor.getY(),backgroundColor.getZ());
 
 		Renderer renderer = new Renderer() {
 			@Override
