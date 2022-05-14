@@ -113,12 +113,10 @@ import jscenegraph.coin3d.glue.cc_glglue;
 import jscenegraph.coin3d.inventor.elements.SoGLMultiTextureCoordinateElement;
 import jscenegraph.coin3d.inventor.elements.SoMultiTextureCoordinateElement;
 import jscenegraph.coin3d.inventor.elements.SoTextureUnitElement;
+import jscenegraph.coin3d.inventor.elements.SoVkMultiTextureCoordinateElement;
 import jscenegraph.database.inventor.SbVec2f;
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoPickAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.elements.SoGLCacheContextElement;
 import jscenegraph.database.inventor.fields.SoFieldData;
 import jscenegraph.database.inventor.fields.SoMFVec2f;
@@ -386,6 +384,7 @@ public static void initClass()
 
     SO_ENABLE(SoCallbackAction.class, SoMultiTextureCoordinateElement.class);
     SO_ENABLE(SoGLRenderAction.class, SoGLMultiTextureCoordinateElement.class);
+    SO_ENABLE(SoVkRenderAction.class, SoVkMultiTextureCoordinateElement.class);
     SO_ENABLE(SoGLRenderAction.class, SoGLVBOElement.class);
     SO_ENABLE(SoPickAction.class,     SoMultiTextureCoordinateElement.class);
 }

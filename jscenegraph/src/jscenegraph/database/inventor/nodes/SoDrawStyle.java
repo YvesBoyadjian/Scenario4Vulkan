@@ -194,7 +194,8 @@ public class SoDrawStyle extends SoNode {
 	       SoCallbackAction.enableElement(SoShapeStyleElement.class);	       
 	   
 	       //SO_ENABLE(SoGLRenderAction, SoGLDrawStyleElement);
-	       SoGLRenderAction.enableElement(SoGLDrawStyleElement.class);	       
+	       SoGLRenderAction.enableElement(SoGLDrawStyleElement.class);
+	       SoVkRenderAction.enableElement(SoDrawStyleElement.class);
 	       //SO_ENABLE(SoGLRenderAction, SoGLLinePatternElement);
 	       SoGLRenderAction.enableElement(SoGLLinePatternElement.class);	       
 	       //SO_ENABLE(SoGLRenderAction, SoGLLineWidthElement);
@@ -202,7 +203,8 @@ public class SoDrawStyle extends SoNode {
 	       //SO_ENABLE(SoGLRenderAction, SoGLPointSizeElement);
 	       SoGLRenderAction.enableElement(SoGLPointSizeElement.class);	       
 	       //SO_ENABLE(SoGLRenderAction, SoShapeStyleElement);
-	       SoGLRenderAction.enableElement(SoShapeStyleElement.class);     
+	       SoGLRenderAction.enableElement(SoShapeStyleElement.class);
+	       SoVkRenderAction.enableElement(SoShapeStyleElement.class);
 	   }
 
 

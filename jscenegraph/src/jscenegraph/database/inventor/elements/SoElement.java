@@ -63,25 +63,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
-import jscenegraph.coin3d.inventor.elements.SoDepthBufferElement;
-import jscenegraph.coin3d.inventor.elements.SoDiffuseColorElement;
-import jscenegraph.coin3d.inventor.elements.SoEnvironmentElement;
-import jscenegraph.coin3d.inventor.elements.SoGLDepthBufferElement;
-import jscenegraph.coin3d.inventor.elements.SoGLMultiTextureCoordinateElement;
-import jscenegraph.coin3d.inventor.elements.SoGLMultiTextureEnabledElement;
-import jscenegraph.coin3d.inventor.elements.SoGLMultiTextureMatrixElement;
-import jscenegraph.coin3d.inventor.elements.SoLightElement;
-import jscenegraph.coin3d.inventor.elements.SoMultiTextureCoordinateElement;
-import jscenegraph.coin3d.inventor.elements.SoMultiTextureEnabledElement;
-import jscenegraph.coin3d.inventor.elements.SoMultiTextureImageElement;
-import jscenegraph.coin3d.inventor.elements.SoMultiTextureMatrixElement;
-import jscenegraph.coin3d.inventor.elements.SoTexture3EnabledElement;
-import jscenegraph.coin3d.inventor.elements.SoTextureCombineElement;
-import jscenegraph.coin3d.inventor.elements.SoTextureScalePolicyElement;
-import jscenegraph.coin3d.inventor.elements.SoTextureScaleQualityElement;
-import jscenegraph.coin3d.inventor.elements.SoTextureUnitElement;
-import jscenegraph.coin3d.inventor.elements.SoVertexAttributeBindingElement;
-import jscenegraph.coin3d.inventor.elements.SoVertexAttributeElement;
+import jscenegraph.coin3d.inventor.elements.*;
 import jscenegraph.coin3d.inventor.elements.gl.SoGLEnvironmentElement;
 import jscenegraph.coin3d.inventor.elements.gl.SoGLMultiTextureImageElement;
 import jscenegraph.coin3d.inventor.elements.gl.SoGLTexture3EnabledElement;
@@ -405,6 +387,7 @@ private        int                 depth;
 		       SoProjectionMatrixElement.initClass(SoGLProjectionMatrixElement.class);
 		       SoElement.initClass(SoGLRenderPassElement.class);
 		       SoElement.initClass(SoGLShapeHintsElement.class);
+		SoElement.initClass(SoVkShapeHintsElement.class);
 		       SoElement.initClass(SoTexture3EnabledElement.class);
 		       SoElement.initClass(SoGLTexture3EnabledElement.class);
 		       SoElement.initClass(SoGLUpdateAreaElement.class);
@@ -418,9 +401,12 @@ private        int                 depth;
 		       SoMultiTextureEnabledElement.initClass(SoMultiTextureEnabledElement.class); // COIN 3D
 		       SoMultiTextureMatrixElement.initClass(SoMultiTextureMatrixElement.class); // COIN 3D
 		       SoGLMultiTextureCoordinateElement.initClass(SoGLMultiTextureCoordinateElement.class); // COIN 3D
+		SoVkMultiTextureCoordinateElement.initClass(SoVkMultiTextureCoordinateElement.class); // YB
 		       SoGLMultiTextureImageElement.initClass(SoGLMultiTextureImageElement.class); // COIN 3D
 		       SoGLMultiTextureEnabledElement.initClass(SoGLMultiTextureEnabledElement.class); // COIN 3D
+		SoVkMultiTextureEnabledElement.initClass(SoVkMultiTextureEnabledElement.class); // YB
 		       SoGLMultiTextureMatrixElement.initClass(SoGLMultiTextureMatrixElement.class); // COIN 3D
+		SoVkMultiTextureMatrixElement.initClass(SoVkMultiTextureMatrixElement.class); // COIN 3D
 
 
 

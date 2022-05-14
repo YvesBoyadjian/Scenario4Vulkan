@@ -365,6 +365,11 @@ initClass()
     SO_ENABLE(SoGLRenderAction.class, SoComplexityElement.class);
     SO_ENABLE(SoGLRenderAction.class, SoTextureQualityElement.class);
     SO_ENABLE(SoGLRenderAction.class, SoTextureOverrideElement.class);
+    SO_ENABLE(SoVkRenderAction.class, SoComplexityTypeElement.class);
+    SO_ENABLE(SoVkRenderAction.class, SoShapeStyleElement.class);
+    SO_ENABLE(SoVkRenderAction.class, SoComplexityElement.class);
+    SO_ENABLE(SoVkRenderAction.class, SoTextureQualityElement.class);
+    SO_ENABLE(SoVkRenderAction.class, SoTextureOverrideElement.class);
     SO_ENABLE(SoPickAction.class,     SoComplexityTypeElement.class);
     SO_ENABLE(SoPickAction.class,     SoShapeStyleElement.class);
     SO_ENABLE(SoPickAction.class,     SoComplexityElement.class);

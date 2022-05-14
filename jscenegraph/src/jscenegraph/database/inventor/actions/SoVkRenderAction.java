@@ -11,6 +11,10 @@ public class SoVkRenderAction extends SoAction implements Destroyable {
         return 1;
     }
 
+    public boolean handleTransparency(boolean transparent) {
+        return false; // TODO VK
+    }
+
     //! Possible return codes from a render abort callback
     public enum AbortCode {
         CONTINUE,               //!< Continue as usual

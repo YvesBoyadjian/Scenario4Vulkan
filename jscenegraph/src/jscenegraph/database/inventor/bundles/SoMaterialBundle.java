@@ -89,7 +89,7 @@ public class SoMaterialBundle extends SoBundle implements Destroyable {
  private   boolean              sendMultiple;   //!< indicates multiple diffuse are sent.
 
     //! Material component elements:
- private   SoGLLazyElement               lazyElt;
+ private   SoLazyElement               lazyElt;
 
 	
 
@@ -121,7 +121,9 @@ public SoMaterialBundle(SoAction action) {
 
     // Nodes that use material bundles haven't been optimized, and
     // should be render cached if possible:
-    SoGLCacheContextElement.shouldAutoCache(state, SoGLCacheContextElement.AutoCache.DO_AUTO_CACHE.getValue());
+    if(state.isElementEnabled(SoGLCacheContextElement.class)) {
+        SoGLCacheContextElement.shouldAutoCache(state, SoGLCacheContextElement.AutoCache.DO_AUTO_CACHE.getValue());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -280,7 +282,7 @@ accessElements(boolean isBetweenBeginEnd,
     
     //Note: it's important to save the lazyElt AFTER the first set(),
     //so that subsequent lazyElt->send()'s will use top-of-stack.
-    lazyElt = ( SoGLLazyElement )SoLazyElement.getInstance(state);
+    lazyElt = SoLazyElement.getInstance(state);
     if (!colorOnly)   
         lazyElt.send(state,SoLazyElement.masks.ALL_MASK.getValue());
     else {

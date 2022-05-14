@@ -59,11 +59,7 @@ import java.util.function.IntConsumer;
 
 import jscenegraph.database.inventor.SbVec2f;
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetBoundingBoxAction;
-import jscenegraph.database.inventor.actions.SoPickAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.elements.SoProfileCoordinateElement;
 import jscenegraph.database.inventor.elements.SoProfileElement;
 import jscenegraph.database.inventor.fields.SoFieldData;
@@ -293,6 +289,8 @@ public static void initClass()
     SO_ENABLE(SoCallbackAction.class,         SoProfileCoordinateElement.class);
     SO_ENABLE(SoGLRenderAction.class,         SoProfileElement.class);
     SO_ENABLE(SoGLRenderAction.class,         SoProfileCoordinateElement.class);
+    SO_ENABLE(SoVkRenderAction.class,         SoProfileElement.class);
+    SO_ENABLE(SoVkRenderAction.class,         SoProfileCoordinateElement.class);
     SO_ENABLE(SoGetBoundingBoxAction.class,   SoProfileElement.class);
     SO_ENABLE(SoGetBoundingBoxAction.class,   SoProfileCoordinateElement.class);
     SO_ENABLE(SoPickAction.class,             SoProfileElement.class);

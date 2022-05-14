@@ -55,15 +55,8 @@
 package jscenegraph.database.inventor.nodes;
 
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetBoundingBoxAction;
-import jscenegraph.database.inventor.actions.SoPickAction;
-import jscenegraph.database.inventor.elements.SoCreaseAngleElement;
-import jscenegraph.database.inventor.elements.SoGLShapeHintsElement;
-import jscenegraph.database.inventor.elements.SoOverrideElement;
-import jscenegraph.database.inventor.elements.SoShapeHintsElement;
+import jscenegraph.database.inventor.actions.*;
+import jscenegraph.database.inventor.elements.*;
 import jscenegraph.database.inventor.fields.SoFieldData;
 import jscenegraph.database.inventor.fields.SoSFBool;
 import jscenegraph.database.inventor.fields.SoSFEnum;
@@ -245,7 +238,9 @@ public static void initClass()
     SoSubNode.SO__NODE_INIT_CLASS(SoShapeHints.class, "ShapeHints", SoNode.class);
 
     SO_ENABLE(SoGLRenderAction.class, SoGLShapeHintsElement.class);
+    SO_ENABLE(SoVkRenderAction.class, SoVkShapeHintsElement.class);
     SO_ENABLE(SoGLRenderAction.class, SoCreaseAngleElement.class);
+    SO_ENABLE(SoVkRenderAction.class, SoCreaseAngleElement.class);
     SO_ENABLE(SoCallbackAction.class, SoShapeHintsElement.class);
     SO_ENABLE(SoCallbackAction.class, SoCreaseAngleElement.class);
     SO_ENABLE(SoPickAction.class, SoShapeHintsElement.class);

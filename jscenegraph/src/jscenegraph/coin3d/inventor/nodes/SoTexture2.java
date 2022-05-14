@@ -7,21 +7,14 @@ import com.jogamp.opengl.GL2;
 
 import jscenegraph.coin3d.glue.cc_glglue;
 import jscenegraph.coin3d.inventor.SbImage;
-import jscenegraph.coin3d.inventor.elements.SoGLMultiTextureEnabledElement;
-import jscenegraph.coin3d.inventor.elements.SoMultiTextureEnabledElement;
-import jscenegraph.coin3d.inventor.elements.SoMultiTextureImageElement;
-import jscenegraph.coin3d.inventor.elements.SoTextureScalePolicyElement;
-import jscenegraph.coin3d.inventor.elements.SoTextureUnitElement;
+import jscenegraph.coin3d.inventor.elements.*;
 import jscenegraph.coin3d.inventor.elements.gl.SoGLMultiTextureImageElement;
 import jscenegraph.coin3d.inventor.misc.SoGLBigImage;
 import jscenegraph.coin3d.inventor.misc.SoGLImage;
 import jscenegraph.coin3d.inventor.threads.SbMutex;
 import jscenegraph.coin3d.misc.SoGL;
 import jscenegraph.database.inventor.*;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoRayPickAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.elements.SoCacheElement;
 import jscenegraph.database.inventor.elements.SoGLCacheContextElement;
 import jscenegraph.database.inventor.elements.SoTextureOverrideElement;
@@ -220,6 +213,7 @@ initClass()
 
   SO_ENABLE(SoGLRenderAction.class, SoGLMultiTextureImageElement.class);
   SO_ENABLE(SoGLRenderAction.class, SoGLMultiTextureEnabledElement.class);
+  SO_ENABLE(SoVkRenderAction.class, SoVkMultiTextureEnabledElement.class);
 
   SO_ENABLE(SoCallbackAction.class, SoMultiTextureEnabledElement.class);
   SO_ENABLE(SoCallbackAction.class, SoMultiTextureImageElement.class);

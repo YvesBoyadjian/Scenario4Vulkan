@@ -74,10 +74,7 @@ import jscenegraph.database.inventor.SoMachine;
 import jscenegraph.database.inventor.SoPickedPoint;
 import jscenegraph.database.inventor.SoPrimitiveVertex;
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetPrimitiveCountAction;
-import jscenegraph.database.inventor.actions.SoRayPickAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.bundles.SoMaterialBundle;
 import jscenegraph.database.inventor.details.SoCubeDetail;
 import jscenegraph.database.inventor.details.SoDetail;
@@ -572,6 +569,11 @@ GLRenderBoundingBox(SoGLRenderAction action, final SbBox3f bbox)
   action.getState().pop();
   mb.destructor(); // java port
 }
+
+    public void
+    VkRenderBoundingBox(SoVkRenderAction action, final SbBox3f bbox) {
+    // TODO VK
+    }
 
 //
 // Macro to multiply out coordinates to avoid extra GL calls:

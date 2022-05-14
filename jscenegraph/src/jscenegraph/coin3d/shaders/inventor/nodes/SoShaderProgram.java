@@ -27,9 +27,11 @@ package jscenegraph.coin3d.shaders.inventor.nodes;
 import jscenegraph.coin3d.inventor.nodes.SoShaderObject;
 import jscenegraph.coin3d.shaders.SoGLShaderProgram;
 import jscenegraph.coin3d.shaders.inventor.elements.SoGLShaderProgramElement;
+import jscenegraph.coin3d.shaders.inventor.elements.SoVkShaderProgramElement;
 import jscenegraph.database.inventor.SoType;
 import jscenegraph.database.inventor.actions.SoGLRenderAction;
 import jscenegraph.database.inventor.actions.SoSearchAction;
+import jscenegraph.database.inventor.actions.SoVkRenderAction;
 import jscenegraph.database.inventor.elements.SoCacheElement;
 import jscenegraph.database.inventor.fields.SoFieldData;
 import jscenegraph.database.inventor.fields.SoMFNode;
@@ -261,6 +263,7 @@ public static void initClass()
 //                              SO_FROM_COIN_2_5|SO_FROM_INVENTOR_5_0);
 
   SO_ENABLE(SoGLRenderAction.class, SoGLShaderProgramElement.class);
+	SO_ENABLE(SoVkRenderAction.class, SoVkShaderProgramElement.class);
 }
 
 /*!

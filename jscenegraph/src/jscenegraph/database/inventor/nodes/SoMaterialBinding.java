@@ -177,6 +177,7 @@ public class SoMaterialBinding extends SoNode {
 	       // Enable elements for appropriate actions:
 	       //SO_ENABLE(SoGLRenderAction, SoMaterialBindingElement);
 	       SoGLRenderAction.enableElement(SoMaterialBindingElement.class);
+		   SoVkRenderAction.enableElement(SoMaterialBindingElement.class);
 	       //SO_ENABLE(SoCallbackAction, SoMaterialBindingElement);
 	       SoCallbackAction.enableElement(SoMaterialBindingElement.class);
 	       //SO_ENABLE(SoPickAction,     SoMaterialBindingElement);

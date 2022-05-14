@@ -501,6 +501,7 @@ viewAll(SoPath path, final SbViewportRegion vpRegion, float slack)
          SO_ENABLE(SoGLRenderAction.class, SoGLViewingMatrixElement.class);
          //SO_ENABLE(SoGLRenderAction.class, SoResetMatrixElement.class);
          SO_ENABLE(SoGLRenderAction.class, SoCullElement.class);
+         SO_ENABLE(SoVkRenderAction.class, SoCullElement.class);
 
          SO_ENABLE(SoGetBoundingBoxAction.class, SoFocalDistanceElement.class);
          SO_ENABLE(SoGetBoundingBoxAction.class, SoProjectionMatrixElement.class);

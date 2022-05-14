@@ -6,6 +6,7 @@ package jscenegraph.coin3d.shaders.inventor.nodes;
 import jscenegraph.coin3d.inventor.elements.SoGLMultiTextureMatrixElement;
 import jscenegraph.coin3d.inventor.elements.SoMultiTextureMatrixElement;
 import jscenegraph.coin3d.inventor.elements.SoTextureUnitElement;
+import jscenegraph.coin3d.inventor.elements.SoVkMultiTextureMatrixElement;
 import jscenegraph.coin3d.shaders.SoGLShaderObject;
 import jscenegraph.coin3d.shaders.SoShader;
 import jscenegraph.database.inventor.SbMatrix;
@@ -111,6 +112,7 @@ public static void initClass()
   SO_ENABLE(SoGLRenderAction.class, SoViewingMatrixElement.class);
   SO_ENABLE(SoGLRenderAction.class, SoProjectionMatrixElement.class);
   SO_ENABLE(SoGLRenderAction.class, SoGLMultiTextureMatrixElement.class);
+    SO_ENABLE(SoVkRenderAction.class, SoVkMultiTextureMatrixElement.class);
   SO_ENABLE(SoGLRenderAction.class, SoTextureUnitElement.class);
 
     SO_ENABLE(SoVkRenderAction.class, SoModelMatrixElement.class);

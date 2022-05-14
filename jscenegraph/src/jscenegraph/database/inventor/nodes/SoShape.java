@@ -116,9 +116,12 @@ import jscenegraph.coin3d.inventor.misc.SoGLBigImage;
 import jscenegraph.coin3d.inventor.misc.SoGLImage;
 import jscenegraph.coin3d.shaders.SoGLSLShaderProgram;
 import jscenegraph.coin3d.shaders.SoGLShaderProgram;
+import jscenegraph.coin3d.shaders.SoVkShaderProgram;
 import jscenegraph.coin3d.shaders.inventor.elements.SoGLShaderProgramElement;
+import jscenegraph.coin3d.shaders.inventor.elements.SoVkShaderProgramElement;
 import jscenegraph.coin3d.shaders.inventor.nodes.SoShaderProgram;
 import jscenegraph.database.inventor.*;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.elements.*;
 import org.lwjglx.util.glu.GLUtessellator;
 import org.lwjglx.util.glu.GLUtessellatorCallback;
@@ -137,12 +140,6 @@ import jscenegraph.coin3d.inventor.lists.SbListInt;
 import jscenegraph.coin3d.inventor.misc.SoGLDriverDatabase;
 import jscenegraph.coin3d.inventor.threads.SbStorage;
 import jscenegraph.coin3d.misc.SoGL;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetBoundingBoxAction;
-import jscenegraph.database.inventor.actions.SoGetPrimitiveCountAction;
-import jscenegraph.database.inventor.actions.SoRayPickAction;
 import jscenegraph.database.inventor.bundles.SoMaterialBundle;
 import jscenegraph.database.inventor.caches.SoBoundingBoxCache;
 import jscenegraph.database.inventor.details.SoDetail;
@@ -610,6 +607,18 @@ shouldGLRender(SoGLRenderAction action) {
 	return SoShape_shouldGLRender(action);
 }
 
+////////////////////////////////////////////////////////////////////////
+//
+// Description:
+//    Returns TRUE if the shape should be rendered now.
+//
+// Use: protected
+
+    protected boolean
+    shouldVkRender(SoVkRenderAction action) {
+        return SoShape_shouldVkRender(action);
+    }
+
 protected boolean
 SoShape_shouldGLRender(SoGLRenderAction action) // YB FIXME : use COIN3D version
 //
@@ -643,7 +652,7 @@ SoShape_shouldGLRender(SoGLRenderAction action) // YB FIXME : use COIN3D version
         if (transparent) return false;
         int style = SoShadowStyleElement.get(state);
         if ((style & SoShadowStyleElement.StyleFlags.CASTS_SHADOW.getValue())!=0){
-            updateStateParameters(state);
+            updateStateGLParameters(state);
             return true;
         }
         return false;
@@ -662,12 +671,13 @@ SoShape_shouldGLRender(SoGLRenderAction action) // YB FIXME : use COIN3D version
         return false;
     }
 
-    updateStateParameters(state);
+    updateStateGLParameters(state);
 
     // Otherwise, go ahead and render the object
     return true;
 }
-private void updateStateParameters(SoState state) {
+
+private void updateStateGLParameters(SoState state) {
 
     SoGLShaderProgram sp = SoGLShaderProgramElement.get(state);
 
@@ -678,6 +688,76 @@ private void updateStateParameters(SoState state) {
     }
 
 }
+
+    protected boolean
+    SoShape_shouldVkRender(SoVkRenderAction action) // YB FIXME : use COIN3D version
+//
+////////////////////////////////////////////////////////////////////////
+    {
+        // SoNode has already checked for render abort, so don't need to
+        // do it now
+        SoState state = action.getState();
+
+        SoShapeStyleElement shapestyle = SoShapeStyleElement.get(state);
+        int shapestyleflags = shapestyle.getFlags();
+
+        // Check if the shape is invisible
+        if (SoDrawStyleElement.get(action.getState()) ==
+                SoDrawStyleElement.Style.INVISIBLE)
+            return false;
+
+        if (pimpl.bboxcache != null && !state.isCacheOpen() && !SoCullElement.completelyInside(state)) {
+            if (pimpl.bboxcache.isValid(state)) {
+                if (SoCullElement.cullTest(state, pimpl.bboxcache.getProjectedBox())) {
+                    return false;
+                }
+            }
+        }
+
+        boolean transparent = (shapestyleflags & (SoShapeStyleElement.Flags.TRANSP_TEXTURE.getValue()|
+                SoShapeStyleElement.Flags.TRANSP_MATERIAL.getValue())) != 0;
+
+
+        if ((shapestyleflags & SoShapeStyleElement.Flags.SHADOWMAP.getValue())!=0) {
+            if (transparent) return false;
+            int style = SoShadowStyleElement.get(state);
+            if ((style & SoShadowStyleElement.StyleFlags.CASTS_SHADOW.getValue())!=0){
+                updateStateVkParameters(state);
+                return true;
+            }
+            return false;
+        }
+
+        // If the shape is transparent and transparent objects are being
+        // delayed, don't render now
+        if (action.handleTransparency(transparent))
+            return false;
+
+        // If the current complexity is BOUNDING_BOX, just render the
+        // cuboid surrounding the shape and tell the shape to stop
+        if (SoComplexityTypeElement.get(action.getState()) ==
+                SoComplexityTypeElement.Type.BOUNDING_BOX) {
+            VkRenderBoundingBox(action);
+            return false;
+        }
+
+        updateStateVkParameters(state);
+
+        // Otherwise, go ahead and render the object
+        return true;
+    }
+
+    private void updateStateVkParameters(SoState state) {
+
+        SoVkShaderProgram sp = SoVkShaderProgramElement.get(state);
+
+        if(null!=sp &&sp.isEnabled())
+        {
+            // Dependent of SoModelMatrixElement
+            sp.updateStateParameters(state);
+        }
+
+    }
 
 ///*!
 //  \COININTERNAL
@@ -967,6 +1047,18 @@ GLRender(SoGLRenderAction action) {
 	SoShape_GLRender(action);
 }
 
+    ////////////////////////////////////////////////////////////////////////
+//
+// Description:
+//    Implements rendering by rendering each primitive generated by
+//    subclass.
+//
+// Use: extender
+    public void
+    VkRender(SoVkRenderAction action) {
+        SoShape_VkRender(action);
+    }
+
 
 public void
 SoShape_GLRender(SoGLRenderAction action)
@@ -994,10 +1086,43 @@ SoShape_GLRender(SoGLRenderAction action)
         // Generate primitives to approximate the shape. Each
         // primitive will be rendered separately (through callbacks).
         generatePrimitives(action);
-        
+
+        matlBundle = null;
         mb.destructor(); // java port
     }
 }
+
+    public void
+    SoShape_VkRender(SoVkRenderAction action)
+//
+////////////////////////////////////////////////////////////////////////
+    {
+        // First see if the object is visible and should be rendered now
+        if (shouldVkRender(action)) {
+
+            SoState state = action.getState();
+
+            //
+            // Set up some info in instance that will be used during
+            // rendering of generated primitives
+            //
+
+            // Send the first material and remember it was sent
+            final SoMaterialBundle        mb = new SoMaterialBundle(action);
+            matlBundle = mb;
+            matlBundle.sendFirst();
+
+            // See if textures are enabled and we need to send texture coordinates
+            sendTexCoords = (SoGLMultiTextureEnabledElement.get(state,0));
+
+            // Generate primitives to approximate the shape. Each
+            // primitive will be rendered separately (through callbacks).
+            generatePrimitives(action);
+
+            matlBundle = null;
+            mb.destructor(); // java port
+        }
+    }
 
 ////////////////////////////////////////////////////////////////////////
 //
@@ -1094,6 +1219,41 @@ GLRenderBoundingBox(SoGLRenderAction action)
     // this task
     bboxCube.GLRenderBoundingBox(action, box);
 }
+
+////////////////////////////////////////////////////////////////////////
+//
+// Description:
+//    Applies render action to the bounding box surrounding the shape.
+//    This is used to render shapes when BOUNDING_BOX complexity is on.
+//
+// Use: protected
+
+    protected void
+    VkRenderBoundingBox(SoVkRenderAction action)
+//
+////////////////////////////////////////////////////////////////////////
+    {
+        // Create a surrogate cube to render, if not already done
+        if (bboxCube == null) {
+            bboxCube = new SoCube();
+            bboxCube.ref();
+        }
+
+        // Compute the bounding box of the shape, using the virtual
+        // computeBBox() method. By using this method (rather than by
+        // applying an SoGetBoundingBoxAction), we can make sure that any
+        // elements used to compute the bounding box are known to any
+        // currently open caches in the render action. Otherwise, objects
+        // (such as 2D text) that use extra elements to compute bounding
+        // boxes would not be rendered correctly when cached.
+        final SbBox3f     box = new SbBox3f();
+        final SbVec3f     center = new SbVec3f();
+        computeBBox(action, box, center);
+
+        // Render the cube using a special method that is designed for
+        // this task
+        bboxCube.VkRenderBoundingBox(action, box);
+    }
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -1245,7 +1405,9 @@ invokeTriangleCallbacks(SoAction action,
 
     else if (actionType.isDerivedFrom(SoGLRenderAction.getClassTypeId()))
         GLRenderTriangle((SoGLRenderAction ) action, v1, v2, v3);
-
+    else if (actionType.isDerivedFrom(SoVkRenderAction.getClassTypeId())) {
+        VkRenderTriangle((SoVkRenderAction) action, v1, v2, v3);
+    }
     // Otherwise, this is invoked through the callback action, so
     // invoke the triangle callbacks.
     else {
@@ -2133,6 +2295,32 @@ GLRenderTriangle(SoGLRenderAction action,
 
     gl2.glEnd();
 }
+////////////////////////////////////////////////////////////////////////
+//
+// Description:
+//    Renders a triangle primitive generated by a subclass.
+//
+// Use: private
+
+    private void
+    VkRenderTriangle(SoVkRenderAction action,
+                     final SoPrimitiveVertex v1,
+                     final SoPrimitiveVertex v2,
+                     final SoPrimitiveVertex v3)
+//
+////////////////////////////////////////////////////////////////////////
+    {
+        // TODO VK
+//        GL2 gl2 = Ctx.get(SoGLCacheContextElement.get(action.getState()));
+//
+//        gl2.glBegin(GL2.GL_TRIANGLES);
+//
+//        RENDER_VERTEX(v1,gl2);
+//        RENDER_VERTEX(v2,gl2);
+//        RENDER_VERTEX(v3,gl2);
+//
+//        gl2.glEnd();
+    }
 
 ////////////////////////////////////////////////////////////////////////
 //

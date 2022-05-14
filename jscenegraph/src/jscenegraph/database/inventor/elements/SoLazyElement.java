@@ -2050,5 +2050,16 @@ setTwosideLightingElt(boolean onoff)
 }
 
 
-
+	public void
+	reset(SoState state, int bitmask) {
+		// do nothing by default
+	}
+	public void
+	sendDiffuseByIndex(int index)
+	{
+		// do nothing by default
+	}
+	public void                send(final SoState stateptr, int mask) {
+		// do nothing by default
+	}
 }

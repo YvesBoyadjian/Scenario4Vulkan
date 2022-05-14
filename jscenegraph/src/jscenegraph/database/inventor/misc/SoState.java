@@ -143,6 +143,7 @@ import com.jogamp.opengl.GL2;
 
 import jscenegraph.coin3d.inventor.lists.SbList;
 import jscenegraph.coin3d.inventor.lists.SbListInt;
+import jscenegraph.coin3d.shaders.inventor.elements.SoGLShaderProgramElement;
 import jscenegraph.database.inventor.SoType;
 import jscenegraph.database.inventor.SoTypeList;
 import jscenegraph.database.inventor.actions.SoAction;
@@ -563,7 +564,9 @@ public class SoState implements Destroyable {
     public boolean              isElementEnabled(int stackIndex)
         { return (stack[stackIndex] != null); }
 
-	
+	public boolean isElementEnabled(Class klass) {
+		return isElementEnabled(SoElement.getClassStackIndex(klass));
+	}
 	
 	// Returns current depth of state. 
 	public int getDepth() {

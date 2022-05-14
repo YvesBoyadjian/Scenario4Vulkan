@@ -419,6 +419,8 @@ public class GLU {
 				return "Invalid value (glu)";
 			case GLU_OUT_OF_MEMORY:
 				return "Out of memory (glu)";
+			case GLU_TESS_NEED_COMBINE_CALLBACK:
+				return "Need combine callback (glu)";
 			default:
 				return Util.translateGLErrorString(error_code);
 		}

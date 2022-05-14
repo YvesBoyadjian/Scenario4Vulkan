@@ -55,11 +55,7 @@
 package jscenegraph.database.inventor.nodes;
 
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetBoundingBoxAction;
-import jscenegraph.database.inventor.actions.SoPickAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.elements.SoFontNameElement;
 import jscenegraph.database.inventor.elements.SoFontSizeElement;
 import jscenegraph.database.inventor.elements.SoOverrideElement;
@@ -144,8 +140,10 @@ public class SoFont extends SoNode {
 	       // Enable elements for appropriate actions:
 //	       SO_ENABLE(SoGLRenderAction,         SoFontNameElement);
 	       SoGLRenderAction.enableElement(SoFontNameElement.class);
+		   SoVkRenderAction.enableElement(SoFontNameElement.class);
 //	       SO_ENABLE(SoGLRenderAction,         SoFontSizeElement);
 	       SoGLRenderAction.enableElement(SoFontSizeElement.class);
+		   SoVkRenderAction.enableElement(SoFontSizeElement.class);
 //	       SO_ENABLE(SoPickAction,             SoFontNameElement);
 	       SoPickAction.enableElement(SoFontNameElement.class);
 //	       SO_ENABLE(SoPickAction,             SoFontSizeElement);
