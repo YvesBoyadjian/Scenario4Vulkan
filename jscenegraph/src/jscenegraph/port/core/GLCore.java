@@ -29,7 +29,7 @@ public class GLCore {
     }
 
     public void glBegin(int mode) {
-        list = new VertexAttribList(state,1);
+        list = new GLVertexAttribList(state,1);
         list.ref();
         l = list.glNewList(0);
         vab = new VertexAttribBuilder(l);

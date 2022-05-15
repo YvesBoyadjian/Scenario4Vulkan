@@ -383,6 +383,7 @@ private        int                 depth;
 		       SoLineWidthElement.initClass(SoGLLineWidthElement.class);
 		       SoElement.initClass(SoGLModelMatrixElement.class);
 		       SoElement.initClass(SoGLNormalElement.class);
+		SoElement.initClass(SoVkNormalElement.class);
 		       SoPointSizeElement.initClass(SoGLPointSizeElement.class);
 		       SoProjectionMatrixElement.initClass(SoGLProjectionMatrixElement.class);
 		       SoElement.initClass(SoGLRenderPassElement.class);

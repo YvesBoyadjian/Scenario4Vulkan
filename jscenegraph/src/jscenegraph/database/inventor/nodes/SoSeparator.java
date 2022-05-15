@@ -287,15 +287,7 @@ import jscenegraph.database.inventor.SoFieldList;
 import jscenegraph.database.inventor.SoInput;
 import jscenegraph.database.inventor.SoPath;
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetBoundingBoxAction;
-import jscenegraph.database.inventor.actions.SoGetMatrixAction;
-import jscenegraph.database.inventor.actions.SoGetPrimitiveCountAction;
-import jscenegraph.database.inventor.actions.SoHandleEventAction;
-import jscenegraph.database.inventor.actions.SoRayPickAction;
-import jscenegraph.database.inventor.actions.SoSearchAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.caches.SoBoundingBoxCache;
 import jscenegraph.database.inventor.caches.SoGLCacheList;
 import jscenegraph.database.inventor.elements.SoCacheElement;
@@ -632,6 +624,7 @@ public boolean readInstance(SoInput in, short flags)
         SoGetBoundingBoxAction.enableElement(SoCacheElement.class);
         //SO_ENABLE(SoGLRenderAction,         SoCacheElement);
         SoGLRenderAction.enableElement(SoCacheElement.class);
+         SoVkRenderAction.enableElement(SoCacheElement.class);
         //SO_ENABLE(SoGLRenderAction,         SoGLCacheContextElement);
         SoGLRenderAction.enableElement(SoGLCacheContextElement.class);
     

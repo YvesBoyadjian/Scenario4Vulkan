@@ -15,6 +15,10 @@ public class SoVkRenderAction extends SoAction implements Destroyable {
         return false; // TODO VK
     }
 
+    public int getCacheContext() {
+        return 0;
+    }
+
     //! Possible return codes from a render abort callback
     public enum AbortCode {
         CONTINUE,               //!< Continue as usual

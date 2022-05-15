@@ -61,10 +61,13 @@ import java.nio.ShortBuffer;
 import jscenegraph.coin3d.shaders.SoGLShaderProgram;
 import jscenegraph.coin3d.shaders.inventor.elements.SoGLShaderProgramElement;
 import jscenegraph.database.inventor.*;
+import jscenegraph.database.inventor.actions.SoVkRenderAction;
 import jscenegraph.database.inventor.elements.*;
 import jscenegraph.port.*;
+import jscenegraph.port.core.GLVertexAttribList;
 import jscenegraph.port.core.VertexAttribBuilder;
 import jscenegraph.port.core.VertexAttribList;
+import jscenegraph.port.core.VkVertexAttribList;
 import org.lwjglx.BufferUtils;
 import org.lwjglx.util.glu.GLUtessellator;
 import org.lwjglx.util.glu.GLUtessellatorCallback;
@@ -1006,9 +1009,16 @@ public void setupToRenderFront(SoState state)
 {
     otherOpen = SoCacheElement.anyOpen(state);
     if (!otherOpen && frontList == null) {
-        frontList = new VertexAttribList(state,
-                                        //SoGLDisplayList.Type.DISPLAY_LIST,
-                                        numChars);
+        if (state.getAction().isOfType(SoGLRenderAction.getClassTypeId())) {
+            frontList = new GLVertexAttribList(state,
+                    //SoGLDisplayList.Type.DISPLAY_LIST,
+                    numChars);
+        }
+        else if (state.getAction().isOfType(SoVkRenderAction.getClassTypeId())) {
+            frontList = new VkVertexAttribList(state,
+                    //SoGLDisplayList.Type.DISPLAY_LIST,
+                    numChars);
+        }
         frontList.ref();
     }
     if (frontList != null) {
@@ -1076,7 +1086,7 @@ void renderFront(SoState state, SoNode node, int line,
         }
         else {
             GL2 gl2 = state.getGL2();
-            VertexAttribList vertexAttribList = new VertexAttribList(state,1);
+            VertexAttribList vertexAttribList = new GLVertexAttribList(state,1);
             VertexAttribList.List list = vertexAttribList.glNewList(1);
             GLU.gluSetUserObject(tobj,new VertexAttribBuilder(list));
             generateFrontChar(gl2, (char)str.get(i), tobj);
@@ -1939,6 +1949,225 @@ private void sendToUniforms(SoState state) {
     }
 }
 
+    public void VkRender(SoVkRenderAction action)
+//
+////////////////////////////////////////////////////////////////////////
+    {
+
+        // First see if the object is visible and should be rendered now
+        if (! shouldVkRender(action))
+            return;
+
+        SoState state = action.getState();
+
+        if (!setupFontCache(state, true))
+            return;
+
+        SoMaterialBindingElement.Binding mbe =
+                SoMaterialBindingElement.get(state);
+        boolean materialPerPart =
+                (mbe == SoMaterialBindingElement.Binding.PER_PART_INDEXED ||
+                        mbe == SoMaterialBindingElement.Binding.PER_PART);
+
+        final SoMaterialBundle    mb = new SoMaterialBundle(action);
+        if (!materialPerPart) {
+            // Make sure the fist current material is sent to GL
+            mb.sendFirst();
+        }
+
+        final float[] firstZ = new float[1], lastZ = new float[1];
+        myFont.getProfileBounds(firstZ, lastZ);
+
+        final GL2 gl2 = state.getGL2(); // java port
+
+        if (tobj == null) {
+            tobj = GLU.gluNewTess();
+            GLUtessellatorCallback cb = new GLUtessellatorCallbackAdapter(){
+
+                @Override
+                public void begin(int arg) {
+                    VertexAttribBuilder builder = (VertexAttribBuilder)tobj.gluGetUserObject();
+                    builder.glBegin(arg);
+                }
+
+                @Override
+                public void end() {
+                    VertexAttribBuilder builder = (VertexAttribBuilder)tobj.gluGetUserObject();
+                    builder.glEnd();
+                }
+
+                @Override
+                public void error(int arg) {
+                    SoOutlineFontCache.errorCB(arg);
+                }
+
+                @Override
+                public void vertex(Object object) {
+                    VertexAttribBuilder builder = (VertexAttribBuilder)tobj.gluGetUserObject();
+                    if(object instanceof FloatBuffer) {
+                        builder.glVertex2fv((FloatBuffer)object);
+                    }
+                    else if(object instanceof SbVec2f) {
+                        SbVec2f vec = (SbVec2f)object;
+                        builder.glVertex2fv(vec.getValueRead(), 0);
+                    }
+                    else {
+                        builder.glVertex2fv((float[])object, 0);
+                    }
+                }
+
+                public void combine(double[] coords, Object[] data,
+                                    float[] weight, Object[] outData) {
+                    outData[0] = data[0]; // YB for compatibility with rounding errors
+                }
+            };
+            GLU.gluTessCallback(tobj, GLU.GLU_BEGIN, cb);
+            GLU.gluTessCallback(tobj, GLU.GLU_END, cb);
+            GLU.gluTessCallback(tobj, GLU.GLU_VERTEX, cb);
+            GLU.gluTessCallback(tobj, GLU.GLU_TESS_COMBINE, cb); // YB for compatibility
+            GLU.gluTessCallback(tobj, GLU.GLU_ERROR, cb);
+        }
+
+        // See if texturing is enabled
+        genTexCoord = SoGLMultiTextureEnabledElement.get(action.getState(),0);
+
+        if ((parts.getValue() & Part.SIDES.getValue())!=0 && (myFont.hasProfile())) {
+            if (materialPerPart) mb.send(1, false);
+
+            myFont.setupToRenderSide(state, genTexCoord);
+            for (int line = 0; line < string.getNum(); line++) {
+                gl2.glPushMatrix();
+                SbVec2f p = getStringOffset(line);
+                if (p.getValueRead()[0] != 0.0 || p.getValueRead()[1] != 0.0)
+                    gl2.glTranslatef(p.getValueRead()[0], p.getValueRead()[1], 0.0f);
+                renderSide(action, line);
+                gl2.glPopMatrix();
+            }
+        }
+
+        state.push();
+
+        SbVec3fArray normals = SbVec3fArray.allocate(1);
+
+        if ((parts.getValue() & Part.BACK.getValue())!=0) {
+            if (materialPerPart) mb.send(2, false);
+
+            if (lastZ[0] != 0.0) {
+                gl2.glTranslatef(0, 0, lastZ[0]);
+            }
+            gl2.glNormal3f(0, 0, -1);
+            normals.setValueXYZ(0,0,0,-1);
+            SoNormalElement.set(state,this,1,normals);
+            SoGLNormalElement normalElement = (SoGLNormalElement) SoNormalElement.getInstance(state);
+            normalElement.send(gl2,0);
+
+            gl2.glFrontFace(GL2.GL_CW);
+
+            myFont.setupToRenderFront(state);
+
+            if (genTexCoord) {
+                gl2.glPushAttrib(GL2.GL_TEXTURE_BIT);
+                gl2.glTexGeni(GL2.GL_S, GL2.GL_TEXTURE_GEN_MODE, GL2.GL_OBJECT_LINEAR);
+                gl2.glTexGeni(GL2.GL_T, GL2.GL_TEXTURE_GEN_MODE, GL2.GL_OBJECT_LINEAR);
+                final float[] params = new float[4];
+                params[0] = -1.0f/myFont.getHeight();
+                params[1] = params[2] = params[3] = 0.0f;
+                gl2.glTexGenfv(GL2.GL_S, GL2.GL_OBJECT_PLANE, params,0);
+                params[1] = -params[0];
+                params[0] = 0.0f;
+                gl2.glTexGenfv(GL2.GL_T, GL2.GL_OBJECT_PLANE, params,0);
+
+                gl2.glEnable(GL2.GL_TEXTURE_GEN_S);
+                gl2.glEnable(GL2.GL_TEXTURE_GEN_T);
+            }
+
+            for (int line = 0; line < string.getNum(); line++) {
+                if (string.operator_square_bracket(line).length() <= 0) continue;
+
+                SbMatrix pushed = new SbMatrix(SoModelMatrixElement.get(state));
+                gl2.glPushMatrix();
+                final SbVec2f p = new SbVec2f(getStringOffset(line));
+                if (p.getValueRead()[0] != 0.0 || p.getValueRead()[1] != 0.0) {
+                    gl2.glTranslatef(p.getValueRead()[0], p.getValueRead()[1], 0.0f);
+                    SoModelMatrixElement.translateBy(state,this,new SbVec3f(p.getValueRead()[0], p.getValueRead()[1], 0.0f));
+                    sendToUniforms(state);
+                }
+                renderFront(action, line, tobj);
+                gl2.glPopMatrix();
+                SoModelMatrixElement.set(state,this,pushed);
+                sendToUniforms(state);
+            }
+
+            if (genTexCoord) {
+                gl2.glPopAttrib();
+            }
+
+            gl2.glFrontFace(GL2.GL_CCW);
+
+            if (lastZ[0] != 0)
+                gl2.glTranslatef(0, 0, -lastZ[0]);
+        }
+        if ((parts.getValue() & Part.FRONT.getValue())!=0) {
+            if (materialPerPart) mb.sendFirst();
+
+            if (firstZ[0] != 0.0) {
+                gl2.glTranslatef(0, 0, firstZ[0]);
+            }
+
+            gl2.glNormal3f(0, 0, 1);
+            normals.setValueXYZ(0,0,0,1);
+            SoNormalElement.set(state,this,1,normals);
+            SoVkNormalElement normalElement = (SoVkNormalElement) SoNormalElement.getInstance(state);
+            normalElement.send(gl2,0);
+
+            myFont.setupToRenderFront(state);
+
+            if (genTexCoord) {
+                gl2.glPushAttrib(GL2.GL_TEXTURE_BIT);
+                gl2.glTexGeni(GL2.GL_S, GL2.GL_TEXTURE_GEN_MODE, GL2.GL_OBJECT_LINEAR);
+                gl2.glTexGeni(GL2.GL_T, GL2.GL_TEXTURE_GEN_MODE, GL2.GL_OBJECT_LINEAR);
+                final float[] params = new float[4];
+                params[0] = 1.0f/myFont.getHeight();
+                params[1] = params[2] = params[3] = 0.0f;
+                gl2.glTexGenfv(GL2.GL_S, GL2.GL_OBJECT_PLANE, params,0);
+                params[1] = params[0];
+                params[0] = 0.0f;
+                gl2.glTexGenfv(GL2.GL_T, GL2.GL_OBJECT_PLANE, params,0);
+
+                gl2.glEnable(GL2.GL_TEXTURE_GEN_S);
+                gl2.glEnable(GL2.GL_TEXTURE_GEN_T);
+            }
+
+            for (int line = 0; line < string.getNum(); line++) {
+                SbMatrix pushed = new SbMatrix(SoModelMatrixElement.get(state));
+                gl2.glPushMatrix();
+                SbVec2f p = new SbVec2f(getStringOffset(line));
+                if (p.getValueRead()[0] != 0.0 || p.getValueRead()[1] != 0.0) {
+                    gl2.glTranslatef(p.getValueRead()[0], p.getValueRead()[1], 0.0f);
+                    SoModelMatrixElement.translateBy(state,this,new SbVec3f(p.getValueRead()[0], p.getValueRead()[1], 0.0f));
+                    sendToUniforms(state);
+                }
+                renderFront(action, line, tobj);
+                gl2.glPopMatrix();
+                SoModelMatrixElement.set(state,this,pushed);
+                sendToUniforms(state);
+            }
+
+            if (genTexCoord) {
+                gl2.glPopAttrib();
+            }
+
+            if (firstZ[0] != 0.0) {
+                gl2.glTranslatef(0, 0, -firstZ[0]);
+            }
+        }
+        state.pop();
+
+        Destroyable.delete(normals);
+        mb.destructor();
+
+    }
+
 ////////////////////////////////////////////////////////////////////////
 //
 // Description:
@@ -1960,7 +2189,8 @@ private void renderFront(SoGLRenderAction action, int line,
     // First, try to figure out if we can use glCallLists:
     boolean useCallLists = false;//true; CORE we cannot use CallLists
 
-    for (int i = 0; i < myFont.getNumUCSChars(line); i++) {
+    int numUCSChars = myFont.getNumUCSChars(line);
+    for (int i = 0; i < numUCSChars; i++) {
         // See if the font cache already has (or can build) a display
         // list for this character:
         if (!myFont.hasFrontDisplayList(gl2, (char)chars.get(i), tobj)) {
@@ -1978,7 +2208,49 @@ private void renderFront(SoGLRenderAction action, int line,
     else {
         myFont.renderFront(action.getState(),this, line, tobj);
     }
-}    
+}
+
+////////////////////////////////////////////////////////////////////////
+//
+// Description:
+//    Render the fronts of the given string.  The GL transformation
+//    matrix is munged by this routine-- surround it by
+//    PushMatrix/PopMatrix.
+//
+// Use: private, internal
+
+    private void renderFront(SoVkRenderAction action, int line,
+                             GLUtessellator tobj)
+//
+////////////////////////////////////////////////////////////////////////
+    {
+        GL2 gl2 = Ctx.get(action.getCacheContext());
+
+        ShortBuffer chars = myFont.getUCSString(line).asShortBuffer();
+
+        // First, try to figure out if we can use glCallLists:
+        boolean useCallLists = false;//true; CORE we cannot use CallLists
+
+        int numUCSChars = myFont.getNumUCSChars(line);
+        for (int i = 0; i < numUCSChars; i++) {
+            // See if the font cache already has (or can build) a display
+            // list for this character:
+            if (!myFont.hasFrontDisplayList(gl2, (char)chars.get(i), tobj)) {
+                useCallLists = false;
+                break;
+            }
+        }
+        // if we have display lists for all of the characters, use
+        // glCallLists:
+        if (useCallLists) {
+            myFont.callFrontLists(gl2, line);
+        }
+        // if we don't, draw the string character-by-character, using the
+        // display lists we do have:
+        else {
+            myFont.renderFront(action.getState(),this, line, tobj);
+        }
+    }
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -2038,6 +2310,64 @@ private void renderSide(SoGLRenderAction action, int line)
         });
     }
 }
+
+////////////////////////////////////////////////////////////////////////
+//
+// Description:
+//    Render the sides of the given string.  The GL transformation
+//    matrix is munged by this routine-- surround it by
+//    PushMatrix/PopMatrix.
+//
+// Use: private
+
+    private void renderSide(SoVkRenderAction action, int line)
+//
+////////////////////////////////////////////////////////////////////////
+    {
+        ShortBuffer chars = myFont.getUCSString(line).asShortBuffer();
+
+        // First, try to figure out if we can use glCallLists:
+        boolean useCallLists = true;
+
+        GL2 gl2 = Ctx.get(action.getCacheContext());
+
+        for (int i = 0; i < myFont.getNumUCSChars(line); i++) {
+            // See if the font cache already has (or can build) a display
+            // list for this character:
+            if (!myFont.hasSideDisplayList(gl2, (char)chars.get(i),  new SideCB() {
+
+                @Override
+                public void run(int nPoints, SbVec3f[] points1, SbVec3f[] norms1, SbVec3f[] points2, SbVec3f[] norms2,
+                                float[] sTexCoords, float[] tTexCoords, final int tTexCoordsIndex) {
+                    renderSideTris(gl2, nPoints, points1, norms1, points2, norms2,
+                            sTexCoords, tTexCoords, tTexCoordsIndex);
+                }
+
+            })) {
+                useCallLists = false;
+                break;
+            }
+        }
+        // if we have display lists for all of the characters, use
+        // glCallLists:
+        if (useCallLists) {
+            myFont.callSideLists(gl2, line);
+        }
+        // if we don't, draw the string character-by-character, using the
+        // display lists we do have:
+        else {
+            myFont.renderSide(gl2, line, new SideCB() {
+
+                @Override
+                public void run(int nPoints, SbVec3f[] points1, SbVec3f[] norms1, SbVec3f[] points2, SbVec3f[] norms2,
+                                float[] sTexCoords, float[] tTexCoords, int tTexCoordsIndex) {
+                    renderSideTris(gl2, nPoints, points1, norms1, points2, norms2,
+                            sTexCoords, tTexCoords, tTexCoordsIndex);
+                }
+
+            });
+        }
+    }
 
 ////////////////////////////////////////////////////////////////////////
 //
