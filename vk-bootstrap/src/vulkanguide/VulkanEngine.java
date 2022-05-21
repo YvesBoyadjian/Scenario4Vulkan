@@ -363,7 +363,8 @@ public class VulkanEngine {
         }
     }
 
-    /*219*/ FrameData get_current_frame()
+    /*219*/
+    public FrameData get_current_frame()
     {
         return _frames[_frameNumber % FRAME_OVERLAP];
     }

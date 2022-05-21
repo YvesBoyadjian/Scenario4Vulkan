@@ -19,14 +19,13 @@ import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
 import static org.lwjgl.util.vma.Vma.vmaDestroyAllocator;
 
 public class VulkanState {
-    final VulkanEngine engine;
     final Init init = new Init();
     final RenderData render_data = new RenderData();
 
     final List<Runnable> cleaners = new ArrayList<>();
 
     public VulkanState(VulkanEngine engine) {
-        this.engine = engine;
+        render_data.setEngine(engine);
     }
 
     public void init_vulkan_instance() {
@@ -76,7 +75,7 @@ public class VulkanState {
     }
 
     public VulkanEngine getEngine() {
-        return engine;
+        return render_data.getEngine();
     }
 
     public void addCleaner(Runnable cleaner) {

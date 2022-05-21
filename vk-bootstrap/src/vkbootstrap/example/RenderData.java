@@ -3,6 +3,7 @@ package vkbootstrap.example;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkQueue;
 import vulkanguide.AllocatedImage;
+import vulkanguide.VulkanEngine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,4 +29,14 @@ public class RenderData {
     public final List</*VkSemaphore*/long[]> finished_semaphore = new ArrayList<>();
     public final List</*VkFence*/long[]> in_flight_fences = new ArrayList<>();
     public long current_frame = 0;
+
+    private VulkanEngine engine;
+
+    public VulkanEngine getEngine() {
+        return engine;
+    }
+
+    public void setEngine(VulkanEngine engine) {
+        this.engine =engine;
+    }
 }

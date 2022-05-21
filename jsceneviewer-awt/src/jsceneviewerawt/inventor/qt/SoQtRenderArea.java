@@ -60,6 +60,7 @@ import vkbootstrap.example.ImageData;
 import vkbootstrap.example.Init;
 import vkbootstrap.example.RenderData;
 import vkbootstrap.example.Renderer;
+import vulkanguide.GPUSceneData;
 import vulkanguide.VkInit;
 import vulkanguide.VulkanEngine;
 
@@ -280,6 +281,7 @@ processSoEvent(final SoEvent event)
 			public int render(Init init, RenderData data, ImageData imageData) {
 				VkCommandBuffer cmd = imageData.command_buffer;
 				engine.draw_objects(cmd, engine._renderables/*.data()*/, engine._renderables.size());
+				engine._frameNumber++;
 				return 0;
 			}
 		};
@@ -288,6 +290,14 @@ processSoEvent(final SoEvent event)
 			@Override
 			public int render(Init init, RenderData data, ImageData imageData) {
 				init.arrow_operator().vkCmdBindPipeline.invoke (imageData.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, /*data.graphics_pipeline[0]*/vkState.getEngine()._materials.get("defaultmesh").pipeline);
+
+				int uniform_offset = 0;//(int)pad_uniform_buffer_size(GPUSceneData.sizeof()) * frameIndex;
+				int[] dummy1 = new int[1]; dummy1[0] = uniform_offset;
+				VK10.vkCmdBindDescriptorSets(imageData.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkState.getEngine()._materials.get("defaultmesh").pipelineLayout, 0, /*1,*/ vkState.getEngine().get_current_frame().globalDescriptor, /*1,*/ /*uniform_offset*/dummy1);
+
+				//object data descriptor
+				vkCmdBindDescriptorSets(imageData.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkState.getEngine()._materials.get("defaultmesh").pipelineLayout, 1, /*1,*/ vkState.getEngine().get_current_frame().objectDescriptor, /*0,*/ null);
+
 				soQtSceneHandler.paintSceneVk(init,data,imageData);
 				return 0;
 			}
