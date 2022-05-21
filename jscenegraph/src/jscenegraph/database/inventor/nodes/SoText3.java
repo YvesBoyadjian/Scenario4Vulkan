@@ -686,13 +686,14 @@ public boolean isRenderValid(SoState state)
 
     if (!isValid(state)) return false;
 
-    if (frontList!=null && 
-        frontList.getContext() != SoGLCacheContextElement.get(state))
-        return false;
-    if (sideList!=null && 
-        sideList.getContext() != SoGLCacheContextElement.get(state))
-        return false;
-
+    if (state.isElementEnabled(SoGLCacheContextElement.class)) {
+        if (frontList != null &&
+                frontList.getContext() != SoGLCacheContextElement.get(state))
+            return false;
+        if (sideList != null &&
+                sideList.getContext() != SoGLCacheContextElement.get(state))
+            return false;
+    }
     return true;
 }
 

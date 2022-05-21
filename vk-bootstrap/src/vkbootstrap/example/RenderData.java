@@ -22,6 +22,7 @@ public class RenderData {
 
     public /*VkCommandPool*/final long[] command_pool = new long[1];
     public final long[] upload_fence = new long[1];
+    public final long[] upload_command_pool = new long[1];
 
     public final List</*VkSemaphore*/long[]> available_semaphores = new ArrayList<>();
     public final List</*VkSemaphore*/long[]> finished_semaphore = new ArrayList<>();

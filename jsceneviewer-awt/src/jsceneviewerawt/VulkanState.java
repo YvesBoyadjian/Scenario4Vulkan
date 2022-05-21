@@ -75,6 +75,10 @@ public class VulkanState {
         return render_data;
     }
 
+    public VulkanEngine getEngine() {
+        return engine;
+    }
+
     public void addCleaner(Runnable cleaner) {
         cleaners.add(cleaner);
     }

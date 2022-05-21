@@ -54,9 +54,7 @@ import jscenegraph.database.inventor.events.SoEvent;
 import jscenegraph.database.inventor.misc.SoState;
 import jscenegraph.port.Ctx;
 import jscenegraph.port.GLXContext;
-import org.lwjgl.vulkan.VKCapabilitiesDevice;
-import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkFenceCreateInfo;
+import org.lwjgl.vulkan.*;
 import org.lwjgl.vulkan.awt.VKData;
 import vkbootstrap.example.ImageData;
 import vkbootstrap.example.Init;
@@ -70,6 +68,7 @@ import java.awt.event.ComponentEvent;
 
 import static org.lwjgl.util.vma.Vma.vmaDestroyAllocator;
 import static org.lwjgl.vulkan.VK10.*;
+import static vulkanguide.VulkanEngine.VK_CHECK;
 
 /**
  * @author Yves Boyadjian
@@ -288,6 +287,7 @@ processSoEvent(final SoEvent event)
 		renderer = new Renderer() {
 			@Override
 			public int render(Init init, RenderData data, ImageData imageData) {
+				init.arrow_operator().vkCmdBindPipeline.invoke (imageData.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, /*data.graphics_pipeline[0]*/vkState.getEngine()._materials.get("defaultmesh").pipeline);
 				soQtSceneHandler.paintSceneVk(init,data,imageData);
 				return 0;
 			}
@@ -318,18 +318,28 @@ processSoEvent(final SoEvent event)
 		engine._device = vulkanState.getInit().device.device[0];
 		engine._instance = vulkanState.getInstance();
 		engine._renderPass[0] = vulkanState.getData().render_pass[0];
-		engine._uploadContext._commandPool[0] = vulkanState.getData().command_pool[0];
+		//engine._uploadContext._commandPool[0] = vulkanState.getData().command_pool[0]; No !
 		engine._graphicsQueue = vulkanState.getData().graphics_queue;
 		engine._allocator = vulkanState.getInit().allocator;
 
 		VkFenceCreateInfo uploadFenceCreateInfo = VkInit.fence_create_info();
 
-		engine.VK_CHECK(vkCreateFence(engine._device, uploadFenceCreateInfo, null, engine._uploadContext._uploadFence));
+		VK_CHECK(vkCreateFence(engine._device, uploadFenceCreateInfo, null, engine._uploadContext._uploadFence));
 		engine._mainDeletionQueue.push_function(() -> {
 			vkDestroyFence(engine._device, engine._uploadContext._uploadFence[0], null);
 		});
 
+
+		VkCommandPoolCreateInfo uploadCommandPoolInfo = VkInit.command_pool_create_info(/*_graphicsQueueFamily*/0);
+		//create pool for upload context
+		VK_CHECK(VK10.vkCreateCommandPool(engine._device, uploadCommandPoolInfo, null, engine._uploadContext._commandPool));
+
+		engine._mainDeletionQueue.push_function(() -> {
+			vkDestroyCommandPool(engine._device, engine._uploadContext._commandPool[0], null);
+		});
+
 		vulkanState.getData().upload_fence[0] = engine._uploadContext._uploadFence[0];
+		vulkanState.getData().upload_command_pool[0] = engine._uploadContext._commandPool[0];
 
 		//engine.init_allocator();
 

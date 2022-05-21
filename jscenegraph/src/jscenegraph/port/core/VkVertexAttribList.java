@@ -124,7 +124,7 @@ public class VkVertexAttribList extends VertexAttribList {
 
             VkDevice device = SoVkRenderVarsElement.getInit(state).device.device[0];
             VkQueue queue = SoVkRenderVarsElement.getRenderData(state).graphics_queue;
-            long pool = SoVkRenderVarsElement.getRenderData(state).command_pool[0];
+            long pool = SoVkRenderVarsElement.getRenderData(state).upload_command_pool[0];
             final long[] fence = SoVkRenderVarsElement.getRenderData(state).upload_fence;
 
             VulkanEngine.immediate_submit_static(
