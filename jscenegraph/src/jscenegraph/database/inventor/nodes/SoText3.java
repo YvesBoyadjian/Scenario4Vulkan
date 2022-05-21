@@ -59,7 +59,9 @@ import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 
 import jscenegraph.coin3d.shaders.SoGLShaderProgram;
+import jscenegraph.coin3d.shaders.SoVkShaderProgram;
 import jscenegraph.coin3d.shaders.inventor.elements.SoGLShaderProgramElement;
+import jscenegraph.coin3d.shaders.inventor.elements.SoVkShaderProgramElement;
 import jscenegraph.database.inventor.*;
 import jscenegraph.database.inventor.actions.SoVkRenderAction;
 import jscenegraph.database.inventor.elements.*;
@@ -2090,12 +2092,12 @@ private void sendToUniforms(SoState state) {
                 if (p.getValueRead()[0] != 0.0 || p.getValueRead()[1] != 0.0) {
                     gl2.glTranslatef(p.getValueRead()[0], p.getValueRead()[1], 0.0f);
                     SoModelMatrixElement.translateBy(state,this,new SbVec3f(p.getValueRead()[0], p.getValueRead()[1], 0.0f));
-                    sendToUniforms(state);
+                    sendToUniformsVk(state);
                 }
                 renderFront(action, line, tobj);
                 gl2.glPopMatrix();
                 SoModelMatrixElement.set(state,this,pushed);
-                sendToUniforms(state);
+                sendToUniformsVk(state);
             }
 
             if (genTexCoord) {
@@ -2145,12 +2147,12 @@ private void sendToUniforms(SoState state) {
                 if (p.getValueRead()[0] != 0.0 || p.getValueRead()[1] != 0.0) {
                     gl2.glTranslatef(p.getValueRead()[0], p.getValueRead()[1], 0.0f);
                     SoModelMatrixElement.translateBy(state,this,new SbVec3f(p.getValueRead()[0], p.getValueRead()[1], 0.0f));
-                    sendToUniforms(state);
+                    sendToUniformsVk(state);
                 }
                 renderFront(action, line, tobj);
                 gl2.glPopMatrix();
                 SoModelMatrixElement.set(state,this,pushed);
-                sendToUniforms(state);
+                sendToUniformsVk(state);
             }
 
             if (genTexCoord) {
@@ -2166,6 +2168,16 @@ private void sendToUniforms(SoState state) {
         Destroyable.delete(normals);
         mb.destructor();
 
+    }
+
+    private void sendToUniformsVk(SoState state) {
+
+        SoVkShaderProgram sp = SoVkShaderProgramElement.get(state);
+        if(null!=sp &&sp.isEnabled())
+        {
+            // Dependent of SoModelMatrixElement
+            sp.updateStateParameters(state);
+        }
     }
 
 ////////////////////////////////////////////////////////////////////////

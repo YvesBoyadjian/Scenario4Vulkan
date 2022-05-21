@@ -2,7 +2,9 @@ package jscenegraph.port.core;
 
 import com.jogamp.opengl.GL2;
 import jscenegraph.coin3d.shaders.SoGLShaderProgram;
+import jscenegraph.coin3d.shaders.SoVkShaderProgram;
 import jscenegraph.coin3d.shaders.inventor.elements.SoGLShaderProgramElement;
+import jscenegraph.coin3d.shaders.inventor.elements.SoVkShaderProgramElement;
 import jscenegraph.database.inventor.SbVec3fSingle;
 import jscenegraph.database.inventor.elements.SoModelMatrixElement;
 import jscenegraph.database.inventor.elements.SoVkRenderVarsElement;
@@ -159,22 +161,35 @@ public class VkVertexAttribList extends VertexAttribList {
         }
 
         public void call(SoNode node) {
-            gl2.glBindBuffer(GL_ARRAY_BUFFER,vbo[0]);
-            gl2.glVertexAttribPointer(0,3,GL_FLOAT,false,/*3*Float.BYTES*/0,0);
 
-            gl2.glEnableVertexAttribArray(0);
+            int numVertices = vertices.size()/3;
 
-            gl2.glDrawArrays(GL_TRIANGLES,0,(int)vboArray.length());
+            if (0==numVertices) {
+                return;
+            }
 
-            gl2.glDisableVertexAttribArray(0);
+            VkCommandBuffer cmd = SoVkRenderVarsElement.getImageData(state).command_buffer;
+            final long[] offset = new long[1];
 
-            gl2.glBindBuffer(GL_ARRAY_BUFFER,0);
+            VK10.vkCmdBindVertexBuffers(cmd,0,vertexBuffer._buffer,offset);
+            vkCmdDraw(cmd,numVertices,1,0,0);
+
+            //gl2.glBindBuffer(GL_ARRAY_BUFFER,vbo[0]);
+            //gl2.glVertexAttribPointer(0,3,GL_FLOAT,false,/*3*Float.BYTES*/0,0);
+
+            //gl2.glEnableVertexAttribArray(0);
+
+            //gl2.glDrawArrays(GL_TRIANGLES,0,(int)vboArray.length());
+
+            //gl2.glDisableVertexAttribArray(0);
+
+            //gl2.glBindBuffer(GL_ARRAY_BUFFER,0);
 
             if(!translation.isNull()) {
                 SoModelMatrixElement.translateBy(state, node, translation);
             }
 
-            SoGLShaderProgram sp = SoGLShaderProgramElement.get(state);
+            SoVkShaderProgram sp = SoVkShaderProgramElement.get(state);
 
             if(null!=sp &&sp.isEnabled())
             {
