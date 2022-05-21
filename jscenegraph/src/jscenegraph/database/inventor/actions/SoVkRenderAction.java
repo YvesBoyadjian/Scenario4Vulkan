@@ -200,6 +200,7 @@ public class SoVkRenderAction extends SoAction implements Destroyable {
 //        SO_ENABLE(SoVkRenderAction.class, SoVkViewportRegionElement.class);
 //        SO_ENABLE(SoVkRenderAction.class, SoVkCacheContextElement.class);
 
+        SO_ENABLE(SoVkRenderAction.class, SoVkRenderVarsElement.class);
     }
 
 }

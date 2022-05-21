@@ -113,7 +113,7 @@ public class VulkanEngine {
         }
     }
 
-    public void VK_CHECK(int err) {
+    public static void VK_CHECK(int err) {
         if (err != 0)
         {
             System.out.println("Detected Vulkan error: " + err );
@@ -1309,14 +1309,18 @@ public class VulkanEngine {
 
     /*1116*/ void immediate_submit(Consumer<VkCommandBuffer> function)
     {
+        immediate_submit_static(_device, _graphicsQueue, _uploadContext._commandPool[0], _uploadContext._uploadFence, function);
+    }
+    public static void immediate_submit_static (VkDevice device, VkQueue queue, long pool, long[] fence, Consumer<VkCommandBuffer> function)
+    {
         final VkCommandBuffer cmd;
 
         //allocate the default command buffer that we will use for rendering
-        VkCommandBufferAllocateInfo cmdAllocInfo = VkInit.command_buffer_allocate_info(_uploadContext._commandPool[0], 1);
+        VkCommandBufferAllocateInfo cmdAllocInfo = VkInit.command_buffer_allocate_info(pool, 1);
 
         PointerBuffer dummy1 = memAllocPointer(1);
-        VK_CHECK(vkAllocateCommandBuffers(_device, cmdAllocInfo, /*cmd*/dummy1));
-        cmd = new VkCommandBuffer(dummy1.get(0),_device);
+        VK_CHECK(vkAllocateCommandBuffers(device, cmdAllocInfo, /*cmd*/dummy1));
+        cmd = new VkCommandBuffer(dummy1.get(0),device);
 
         memFree(dummy1);
 
@@ -1336,12 +1340,12 @@ public class VulkanEngine {
 
         //submit command buffer to the queue and execute it.
         // _renderFence will now block until the graphic commands finish execution
-        VK_CHECK(vkQueueSubmit(_graphicsQueue, /*1,*/ submit, _uploadContext._uploadFence[0]));
+        VK_CHECK(vkQueueSubmit(queue, /*1,*/ submit, fence[0]));
 
-        VK10.vkWaitForFences(_device, /*1,*/ _uploadContext._uploadFence, true, 9999999999l);
-        VK10.vkResetFences(_device, /*1,*/ _uploadContext._uploadFence[0]);
+        VK10.vkWaitForFences(device, /*1,*/ fence, true, 9999999999l);
+        VK10.vkResetFences(device, /*1,*/ fence[0]);
 
-        vkResetCommandPool(_device, _uploadContext._commandPool[0], 0);
+        vkResetCommandPool(device, pool, 0);
     }
 
     /*1149*/ public void init_descriptors()

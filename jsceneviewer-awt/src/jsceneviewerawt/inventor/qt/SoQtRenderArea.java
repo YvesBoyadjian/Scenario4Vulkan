@@ -68,6 +68,7 @@ import vulkanguide.VulkanEngine;
 import java.awt.*;
 import java.awt.event.ComponentEvent;
 
+import static org.lwjgl.util.vma.Vma.vmaDestroyAllocator;
 import static org.lwjgl.vulkan.VK10.*;
 
 /**
@@ -141,6 +142,8 @@ public class SoQtRenderArea extends SoQtGLWidget {
 	//! Used API
 	private API api;
 
+	final VulkanEngine engine = new VulkanEngine();
+
 	public SoQtRenderArea(Container parent, int style) {
 		this(parent,style,true, API.OpenGL);
 	}
@@ -166,7 +169,7 @@ public class SoQtRenderArea extends SoQtGLWidget {
 		}
 		else if (api == API.Vulkan) {
 			VKData vkf = new VKData();
-			VulkanState vulkanState = new VulkanState();
+			VulkanState vulkanState = new VulkanState(engine);
 			vulkanState.init_vulkan_instance();
 			setVulkanState(vulkanState);
 			vkf.instance = vulkanState.getInstance();
@@ -257,8 +260,6 @@ processSoEvent(final SoEvent event)
         initialRendering = false;    	
     }
 
-	final VulkanEngine engine = new VulkanEngine();
-
 	public void paintVK(VulkanState vkState) {
 
 		SbColor backgroundColor = soQtSceneHandler.getSceneManager().getBackgroundColor();
@@ -287,7 +288,7 @@ processSoEvent(final SoEvent event)
 		renderer = new Renderer() {
 			@Override
 			public int render(Init init, RenderData data, ImageData imageData) {
-				soQtSceneHandler.paintSceneVk();
+				soQtSceneHandler.paintSceneVk(init,data,imageData);
 				return 0;
 			}
 		};
@@ -319,6 +320,7 @@ processSoEvent(final SoEvent event)
 		engine._renderPass[0] = vulkanState.getData().render_pass[0];
 		engine._uploadContext._commandPool[0] = vulkanState.getData().command_pool[0];
 		engine._graphicsQueue = vulkanState.getData().graphics_queue;
+		engine._allocator = vulkanState.getInit().allocator;
 
 		VkFenceCreateInfo uploadFenceCreateInfo = VkInit.fence_create_info();
 
@@ -327,7 +329,9 @@ processSoEvent(final SoEvent event)
 			vkDestroyFence(engine._device, engine._uploadContext._uploadFence[0], null);
 		});
 
-		engine.init_allocator();
+		vulkanState.getData().upload_fence[0] = engine._uploadContext._uploadFence[0];
+
+		//engine.init_allocator();
 
 		engine.init_depth_image();
 

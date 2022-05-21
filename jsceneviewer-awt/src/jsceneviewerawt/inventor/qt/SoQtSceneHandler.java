@@ -60,6 +60,7 @@ import jscenegraph.database.inventor.actions.SoGLRenderAction;
 import jscenegraph.database.inventor.elements.SoGLLazyElement;
 import jscenegraph.database.inventor.elements.SoLazyElement;
 import jscenegraph.database.inventor.elements.SoVkLazyElement;
+import jscenegraph.database.inventor.elements.SoVkRenderVarsElement;
 import jscenegraph.database.inventor.events.SoEvent;
 import jscenegraph.database.inventor.events.SoMouseButtonEvent;
 import jscenegraph.database.inventor.misc.SoState;
@@ -73,6 +74,9 @@ import jscenegraph.interaction.inventor.nodes.SoSelection;
 import jscenegraph.interaction.inventor.nodes.SoSelectionClassCB;
 import jsceneviewerawt.inventor.qt.SoQtGLWidget.EventType;
 import jsceneviewerawt.inventor.qt.devices.SoQtDevice;
+import vkbootstrap.example.ImageData;
+import vkbootstrap.example.Init;
+import vkbootstrap.example.RenderData;
 
 /**
  * @author Yves Boyadjian
@@ -352,12 +356,17 @@ setAutoRedraw(boolean flag)
     	  actualRedraw();    	
     }
 
-    public void paintSceneVk() {
+    public void paintSceneVk(Init init, RenderData data, ImageData imageData) {
         SoState state = sceneMgr.getVkRenderAction().getState();
         if (state != null) {
             SoVkLazyElement vkLazyElement = SoVkLazyElement.getInstance(state);
             if (vkLazyElement != null) {
                 vkLazyElement.reset(state, SoLazyElement.masks.ALL_MASK.getValue());
+            }
+
+            SoVkRenderVarsElement vkRenderVarsElement = SoVkRenderVarsElement.getInstance(state);
+            if (vkRenderVarsElement != null) {
+                vkRenderVarsElement.setElt(init,data,imageData);
             }
         }
 

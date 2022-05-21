@@ -8,6 +8,7 @@ import vkbootstrap.example.Init;
 import vkbootstrap.example.RenderData;
 import vkbootstrap.example.Renderer;
 import vkbootstrap.example.Triangle;
+import vulkanguide.VulkanEngine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,10 +19,15 @@ import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
 import static org.lwjgl.util.vma.Vma.vmaDestroyAllocator;
 
 public class VulkanState {
+    final VulkanEngine engine;
     final Init init = new Init();
     final RenderData render_data = new RenderData();
 
     final List<Runnable> cleaners = new ArrayList<>();
+
+    public VulkanState(VulkanEngine engine) {
+        this.engine = engine;
+    }
 
     public void init_vulkan_instance() {
         Triangle.instance_initialization(init);

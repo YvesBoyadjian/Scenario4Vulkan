@@ -372,6 +372,8 @@ private        int                 depth;
 		       // GL specific elements must be initialized after their more
 		       // generic counterparts
 
+		SoVkRenderVarsElement.initClass(SoVkRenderVarsElement.class);
+
 		       SoGLCacheContextElement.initClass(SoGLCacheContextElement.class);
 		       SoElement.initClass(SoGLClipPlaneElement.class);
 		       SoElement.initClass(SoGLCoordinateElement.class);
