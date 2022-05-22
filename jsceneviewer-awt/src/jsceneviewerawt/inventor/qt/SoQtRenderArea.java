@@ -43,8 +43,16 @@
 package jsceneviewerawt.inventor.qt;
 
 import jscenegraph.database.inventor.SbColor;
+import jscenegraph.database.inventor.SbMatrix;
+import jscenegraph.database.inventor.SbViewVolume;
+import jscenegraph.database.inventor.actions.SoSearchAction;
+import jscenegraph.database.inventor.nodes.SoCamera;
+import jscenegraph.database.inventor.nodes.SoNode;
+import jscenegraph.interaction.inventor.SoSceneManager;
 import jsceneviewerawt.VulkanState;
-import org.lwjgl.opengl.GLCapabilities;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.awt.GLData;
 
 import com.jogamp.opengl.GL2;
@@ -54,20 +62,23 @@ import jscenegraph.database.inventor.events.SoEvent;
 import jscenegraph.database.inventor.misc.SoState;
 import jscenegraph.port.Ctx;
 import jscenegraph.port.GLXContext;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import org.lwjgl.vulkan.awt.VKData;
 import vkbootstrap.example.ImageData;
 import vkbootstrap.example.Init;
 import vkbootstrap.example.RenderData;
 import vkbootstrap.example.Renderer;
-import vulkanguide.GPUSceneData;
-import vulkanguide.VkInit;
-import vulkanguide.VulkanEngine;
+import vulkanguide.*;
 
 import java.awt.*;
 import java.awt.event.ComponentEvent;
+import java.nio.Buffer;
+import java.util.List;
 
-import static org.lwjgl.util.vma.Vma.vmaDestroyAllocator;
+import static org.lwjgl.system.MemoryUtil.memAddress;
+import static org.lwjgl.system.MemoryUtil.memAllocPointer;
+import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
 import static vulkanguide.VulkanEngine.VK_CHECK;
 
@@ -289,6 +300,75 @@ processSoEvent(final SoEvent event)
 		renderer = new Renderer() {
 			@Override
 			public int render(Init init, RenderData data, ImageData imageData) {
+
+				// _________________________________________________________________________________ Camera
+				//make a model view matrix for rendering the object
+				//camera view
+				Vector3f camPos = new Vector3f( 0.f,-6.f,-10.f );
+
+				Matrix4f view = new Matrix4f().translate(camPos);
+				//camera projection
+				Matrix4f projection = new Matrix4f().perspective((float)Math.toRadians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
+				projection.m11( projection.m11() * -1);
+
+				SoSceneManager manager = soQtSceneHandler.getSceneManager();
+				SoNode sceneGraph = manager.getSceneGraph();
+				SoSearchAction sa = new SoSearchAction();
+				sa.setFind(SoSearchAction.LookFor.TYPE);
+				sa.setInterest(SoSearchAction.Interest.FIRST);
+				sa.setType(SoCamera.getClassTypeId());
+				sa.apply(sceneGraph);
+				SoCamera camera = (SoCamera)sa.getPath().getTail();
+
+				SbViewVolume viewVolume = camera.getViewVolume();
+
+				final SbMatrix viewMat = new SbMatrix(), projMat = new SbMatrix();
+
+				// Compute viewing and projection matrices
+				viewVolume.getMatrices(viewMat, projMat);
+
+				projMat.toMatrix4f(projection);
+				viewMat.toMatrix4f(view);
+
+				final GPUCameraData camData = new GPUCameraData();
+				camData.proj.set( projection);
+				camData.view.set( view);
+				camData.viewproj.set( projection.mul( view));
+
+				PointerBuffer dataCam = memAllocPointer(1);
+				vmaMapMemory(vkState.getEngine()._allocator, vkState.getEngine().get_current_frame().cameraBuffer._allocation, dataCam);
+
+				Buffer dummy = camData.toBuffer();
+
+				/*memcpy*/
+				MemoryUtil.memCopy(/*data,*/ /*camData*/memAddress(dummy), dataCam.get(), GPUCameraData.sizeof());
+
+				vmaUnmapMemory(vkState.getEngine()._allocator, vkState.getEngine().get_current_frame().cameraBuffer._allocation);
+
+				// ________________________________________________________________________________ End camera
+
+				// ________________________________________________________________________________ Object
+
+
+				PointerBuffer objectData = memAllocPointer(1);
+				vmaMapMemory(vkState.getEngine()._allocator, vkState.getEngine().get_current_frame().objectBuffer._allocation, objectData);
+
+				/*GPUObjectData*/long objectSSBO = objectData.get(0);
+
+				int count = vkState.getEngine()._renderables.size();
+				List<RenderObject> first = vkState.getEngine()._renderables;
+
+				for (int i = 0; i < count; i++)
+				{
+					RenderObject object = first.get(i);
+					GPUObjectData.setModelMatrix(objectSSBO + i* GPUObjectData.sizeof(), object.transformMatrix);
+				}
+
+				vmaUnmapMemory(vkState.getEngine()._allocator, vkState.getEngine().get_current_frame().objectBuffer._allocation);
+
+
+				// ________________________________________________________________________________ End Object
+
 				init.arrow_operator().vkCmdBindPipeline.invoke (imageData.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, /*data.graphics_pipeline[0]*/vkState.getEngine()._materials.get("defaultmesh").pipeline);
 
 				int uniform_offset = 0;//(int)pad_uniform_buffer_size(GPUSceneData.sizeof()) * frameIndex;
@@ -305,8 +385,7 @@ processSoEvent(final SoEvent event)
 
 		vkState.draw_VK(renderer);
 //		getSceneHandler().getSceneGraph().touch();//render();
-		//engine._frameNumber++;
-		//soQtSceneHandler.paintScene();
+		engine._frameNumber++;
 		initialRendering = false;
 	}
 

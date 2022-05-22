@@ -2015,4 +2015,12 @@ public void jacobi3(final float[] evalues,
 			}
 		}
     }
+
+    public void toMatrix4f(Matrix4f mat4) {
+		for (int i=0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				mat4.set(i,j, matrix[i][j]);
+			}
+		}
+    }
 }
