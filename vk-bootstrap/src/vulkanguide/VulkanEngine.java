@@ -162,7 +162,7 @@ public class VulkanEngine {
 
         init_descriptors();
 
-        init_pipelines();
+        init_pipelines(false);
 
         load_images();
 
@@ -705,7 +705,7 @@ public class VulkanEngine {
     });
     }
 
-    /*519*/ public void init_pipelines()
+    /*519*/ public void init_pipelines(boolean onlyPosition)
     {
         /*VkShaderModule*/final long[] colorMeshShader = new long[1];
         if (!load_shader_module("../../shaders/default_lit.frag.spv", colorMeshShader))
@@ -821,7 +821,7 @@ public class VulkanEngine {
 
         //build the mesh pipeline
 
-        VertexInputDescription vertexDescription = Vertex.get_vertex_description();
+        VertexInputDescription vertexDescription = Vertex.get_vertex_description(onlyPosition);
 
         //connect the pipeline builder vertex input info to the one we get from Vertex
         VkVertexInputAttributeDescription.Buffer dummy1 = VkVertexInputAttributeDescription.create(vertexDescription.attributes.size());

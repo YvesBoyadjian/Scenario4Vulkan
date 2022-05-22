@@ -373,10 +373,25 @@ processSoEvent(final SoEvent event)
 
 				int uniform_offset = 0;//(int)pad_uniform_buffer_size(GPUSceneData.sizeof()) * frameIndex;
 				int[] dummy1 = new int[1]; dummy1[0] = uniform_offset;
-				VK10.vkCmdBindDescriptorSets(imageData.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkState.getEngine()._materials.get("defaultmesh").pipelineLayout, 0, /*1,*/ vkState.getEngine().get_current_frame().globalDescriptor, /*1,*/ /*uniform_offset*/dummy1);
+
+				VK10.vkCmdBindDescriptorSets(
+						imageData.command_buffer,
+						VK_PIPELINE_BIND_POINT_GRAPHICS,
+						vkState.getEngine()._materials.get("defaultmesh").pipelineLayout,
+						0, /*1,*/
+						vkState.getEngine().get_current_frame().globalDescriptor, /*1,*/ /*uniform_offset*/
+						dummy1
+				);
 
 				//object data descriptor
-				vkCmdBindDescriptorSets(imageData.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkState.getEngine()._materials.get("defaultmesh").pipelineLayout, 1, /*1,*/ vkState.getEngine().get_current_frame().objectDescriptor, /*0,*/ null);
+				vkCmdBindDescriptorSets(
+						imageData.command_buffer,
+						VK_PIPELINE_BIND_POINT_GRAPHICS,
+						vkState.getEngine()._materials.get("defaultmesh").pipelineLayout,
+						1, /*1,*/
+						vkState.getEngine().get_current_frame().objectDescriptor, /*0,*/
+						null
+				);
 
 				soQtSceneHandler.paintSceneVk(init,data,imageData);
 				return 0;
@@ -436,7 +451,7 @@ processSoEvent(final SoEvent event)
 
 		engine.init_descriptors();
 
-		engine.init_pipelines();
+		engine.init_pipelines(true);
 
 		engine.load_images();
 

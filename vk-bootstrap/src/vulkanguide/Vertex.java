@@ -34,14 +34,14 @@ public class Vertex {
         return Float.BYTES * 9;
     }
 
-    public static VertexInputDescription get_vertex_description() {
+    public static VertexInputDescription get_vertex_description(boolean onlyPosition) {
 
         final VertexInputDescription description = new VertexInputDescription();
 
         //we will have just 1 vertex buffer binding, with a per-vertex rate
         final VkVertexInputBindingDescription mainBinding = VkVertexInputBindingDescription.create();
         mainBinding.binding ( 0);
-        mainBinding.stride ( Vertex.sizeof());
+        mainBinding.stride ( onlyPosition ? Float.BYTES * 3 : Vertex.sizeof());
         mainBinding.inputRate ( VK_VERTEX_INPUT_RATE_VERTEX);
 
         description.bindings.add(mainBinding);
@@ -76,9 +76,11 @@ public class Vertex {
 
 
         description.attributes.add(positionAttribute);
-        description.attributes.add(normalAttribute);
-        description.attributes.add(colorAttribute);
-        description.attributes.add(uvAttribute);
+        if(!onlyPosition) {
+            description.attributes.add(normalAttribute);
+            description.attributes.add(colorAttribute);
+            description.attributes.add(uvAttribute);
+        }
         return description;
     }
 }
