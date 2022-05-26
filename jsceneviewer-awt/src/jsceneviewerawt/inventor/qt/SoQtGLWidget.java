@@ -248,7 +248,11 @@ public /*GLData*/Object format()
     }
 
     public void updateGL() {
-		SwingUtilities.invokeLater(()->mainWidget.render());
+		SwingUtilities.invokeLater(()->{
+			if(null != mainWidget) {
+				mainWidget.render();
+			}
+		});
     	//mainWidget.render();//display();
     }
     
