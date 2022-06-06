@@ -40,12 +40,14 @@ import jscenegraph.coin3d.inventor.misc.SoGLDriverDatabase;
 import jscenegraph.coin3d.misc.SoGL;
 import jscenegraph.coin3d.shaders.*;
 import jscenegraph.coin3d.shaders.inventor.elements.SoGLShaderProgramElement;
+import jscenegraph.coin3d.shaders.inventor.elements.SoVkShaderProgramElement;
 import jscenegraph.coin3d.shaders.inventor.nodes.SoMFUniformShaderParameter;
 import jscenegraph.coin3d.shaders.inventor.nodes.SoShaderStateMatrixParameter;
 import jscenegraph.coin3d.shaders.inventor.nodes.SoUniformShaderParameter;
 import jscenegraph.database.inventor.*;
 import jscenegraph.database.inventor.actions.SoGLRenderAction;
 import jscenegraph.database.inventor.actions.SoSearchAction;
+import jscenegraph.database.inventor.actions.SoVkRenderAction;
 import jscenegraph.database.inventor.elements.*;
 import jscenegraph.database.inventor.errors.SoDebugError;
 import jscenegraph.database.inventor.fields.SoField;
@@ -195,6 +197,7 @@ public class SoShaderObject extends SoNode {
 
   private final SbPList<Path> searchdirectories = new SbPList<>();
   final HashMap <Integer, SoGLShaderObject> glshaderobjects = new HashMap<>();  //java port
+    SoVkShaderObject vkshaderobject;
 
   public static void initClass()
   //
@@ -339,6 +342,64 @@ GLRender(SoGLRenderAction action)
 	  }
 }
 
+public void VkRender(SoVkRenderAction action)
+{
+    boolean isactive = this.owner.isActive.getValue();
+    if (!isactive) return;
+
+    SoState state = action.getState();
+
+    SoVkShaderProgram shaderProgram = SoVkShaderProgramElement.get(state);
+    if (shaderProgram == null) {
+        SoDebugError.postWarning("SoShaderObject.VkRender",
+                "SoShaderObject seems to not be under a SoShaderProgram node");
+        return;
+    }
+
+    final int cachecontext = 0;
+
+    SoVkShaderObject shaderobject = this.getVkShaderObject();
+
+    if (this.owner.sourceProgram.isDefault() ||
+            this.owner.sourceProgram.getValue().length() == 0) { return; }
+
+    if (shaderobject == null) {
+        if (this.shouldload) {
+            this.checkType();
+            this.readSource();
+            this.shouldload = false;
+        }
+        // if file could not be read
+        if (this.cachedSourceType == SoShaderObject.SourceType.FILENAME) return;
+
+        switch (this.cachedSourceType) {
+            case GLSL_PROGRAM:
+                shaderobject = (SoVkShaderObject) new SoVkGLSLShaderObject();
+            default:
+                assert(false);// && "This shouldn't happen!");
+        }
+
+        if (this.owner.isOfType(SoVertexShader.getClassTypeId())) {
+            shaderobject.setShaderType(SoGLShaderObject.ShaderType.VERTEX);
+        }
+        else if (this.owner.isOfType(SoFragmentShader.getClassTypeId())) {
+            shaderobject.setShaderType(SoGLShaderObject.ShaderType.FRAGMENT);
+        }
+        else {
+            assert(this.owner.isOfType(SoGeometryShader.getClassTypeId()));
+            shaderobject.setShaderType(SoGLShaderObject.ShaderType.GEOMETRY);
+        }
+        shaderobject.sourcehint = getSourceHint();
+
+        shaderobject.load(this.cachedSourceProgram);
+        this.setVkShaderObject(shaderobject);
+    }
+    if (shaderobject != null) {
+        shaderProgram.addShaderObject(shaderobject);
+        shaderobject.setIsActive(isactive);
+    }
+}
+
 // doc from parent
 public void
 search(SoSearchAction action)
@@ -410,12 +471,15 @@ public String getSourceProgram()
 public void
 updateParameters(SoState state)
 {
-  int cachecontext = SoGLCacheContextElement.get(state);
+    boolean isGL = state.isElementEnabled(SoGLCacheContextElement.class);
+  int cachecontext = isGL ? SoGLCacheContextElement.get(state) : 0;
   /*PRIVATE(this).*/updateAllParameters(cachecontext);
   /*PRIVATE(this).*/updateStateMatrixParameters(cachecontext, state);
   /*PRIVATE(this).*/updateCoinParameters(cachecontext, state);
-  updateLights(cachecontext, state);
-  updateColor(state);
+  if(isGL) {
+      updateLights(cachecontext, state);
+      updateColor(state);
+  }
 }
 
 public void updateColor(SoState state) {
@@ -483,13 +547,6 @@ public void updateLights(final int cachecontext, SoState state) {
                     v4.setValue(3, 0);
 
                     positionLocation.glUniform4fv(gl2, 1, v4.getValue());
-
-//                if( 5 == i ) {
-//                    System.out.println("light 5 x = "+value4.getX()+" y = "+value4.getY());
-//                    SbMatrix modelMat = SoModelMatrixElement.get(state);
-//                    SbMatrix viewingMat = SoViewingMatrixElement.get(state);
-//                    //System.out.println("modelMat x = "+viewingMat.toGL()[0]);
-//                }
                 }
             }
             {
@@ -859,18 +916,37 @@ updateStateMatrixParameters(final int cachecontext, SoState state)
 //#define STATE_PARAM SoShaderStateMatrixParameter
   if (!this.owner.isActive.getValue()) return;
 
-  SoGLShaderObject shaderobject = this.getGLShaderObject(cachecontext);
-  if (shaderobject == null) return;
+  if (state.getAction().isOfType(SoVkRenderAction.getClassTypeId())) {
+        SoVkShaderObject shaderobject = this.getVkShaderObject();
+        if (shaderobject == null) {
+            return;
+        }
 
-  int i, cnt = this.owner.parameter.getNum();
-  for (i= 0; i <cnt; i++) {
-	  SoUniformShaderParameter param = (SoUniformShaderParameter)this.owner.parameter.operator_square_bracket(i).get();
-    if (param.isOfType(SoShaderStateMatrixParameter.getClassTypeId())) {
-    	((SoShaderStateMatrixParameter)param).updateValue(state);
-      ((SoShaderStateMatrixParameter)param).updateParameter(shaderobject);
-    }
+      int i, cnt = this.owner.parameter.getNum();
+      for (i = 0; i < cnt; i++) {
+          SoUniformShaderParameter param = (SoUniformShaderParameter) this.owner.parameter.operator_square_bracket(i).get();
+          if (param.isOfType(SoShaderStateMatrixParameter.getClassTypeId())) {
+              ((SoShaderStateMatrixParameter) param).updateValue(state);
+              //((SoShaderStateMatrixParameter) param).updateParameter(shaderobject); TODO
+          }
+      }
   }
+  else {
+
+      SoGLShaderObject shaderobject = this.getGLShaderObject(cachecontext);
+      if (shaderobject == null)
+          return;
+
+      int i, cnt = this.owner.parameter.getNum();
+      for (i = 0; i < cnt; i++) {
+          SoUniformShaderParameter param = (SoUniformShaderParameter) this.owner.parameter.operator_square_bracket(i).get();
+          if (param.isOfType(SoShaderStateMatrixParameter.getClassTypeId())) {
+              ((SoShaderStateMatrixParameter) param).updateValue(state);
+              ((SoShaderStateMatrixParameter) param).updateParameter(shaderobject);
+          }
+      }
 //#undef STATE_PARAM
+  }
 }
 
 private boolean
@@ -941,6 +1017,10 @@ private   SoGLShaderObject getGLShaderObject(final int cachecontext) {
     return null;
   }
 
+  private SoVkShaderObject getVkShaderObject() {
+    return vkshaderobject;
+  }
+
 private void setGLShaderObject(SoGLShaderObject obj, final int cachecontext) {
     SoGLShaderObject oldshader;
     if ((oldshader = this.glshaderobjects.get(cachecontext))!=null) {
@@ -948,6 +1028,10 @@ private void setGLShaderObject(SoGLShaderObject obj, final int cachecontext) {
     		  SoShaderObject::really_delete_object, oldshader);
     }
     this.glshaderobjects.put(cachecontext, obj);
+  }
+
+  private void setVkShaderObject(SoVkShaderObject obj) {
+    this.vkshaderobject = obj;
   }
 
 private void deleteGLShaderObjects() {

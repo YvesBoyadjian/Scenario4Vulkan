@@ -35,12 +35,13 @@ import jscenegraph.database.inventor.SbName;
 import jscenegraph.database.inventor.elements.SoGLCacheContextElement;
 import jscenegraph.database.inventor.misc.SoState;
 import jscenegraph.database.inventor.nodes.SoNode;
+import jscenegraph.port.Destroyable;
 
 /**
  * @author Yves Boyadjian
  *
  */
-public class SoGLShaderProgram {
+public class SoGLShaderProgram implements Destroyable {
 
 	//private SoGLARBShaderProgram  arbShaderProgram; TODO
 	//private SoGLCgShaderProgram   cgShaderProgram; TODO

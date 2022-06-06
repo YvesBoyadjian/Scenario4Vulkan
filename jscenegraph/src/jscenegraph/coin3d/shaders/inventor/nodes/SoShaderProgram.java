@@ -26,6 +26,7 @@ package jscenegraph.coin3d.shaders.inventor.nodes;
 
 import jscenegraph.coin3d.inventor.nodes.SoShaderObject;
 import jscenegraph.coin3d.shaders.SoGLShaderProgram;
+import jscenegraph.coin3d.shaders.SoVkShaderProgram;
 import jscenegraph.coin3d.shaders.inventor.elements.SoGLShaderProgramElement;
 import jscenegraph.coin3d.shaders.inventor.elements.SoVkShaderProgramElement;
 import jscenegraph.database.inventor.SoType;
@@ -247,6 +248,7 @@ public class SoShaderProgram extends SoNode {
 
 //private SoShaderProgram * owner;
 	  private final SoGLShaderProgram glShaderProgram = new SoGLShaderProgram();
+	  private final SoVkShaderProgram vkShaderProgram = new SoVkShaderProgram();
 
 	  private static void sensorCB(Object data, SoSensor sensor)
 	  {
@@ -371,6 +373,44 @@ public void GLRender(SoGLRenderAction action)
 	      ((SoShaderObject )node).updateParameters(state);
 	    }
 	  }
+}
+
+public void VkRender(SoVkRenderAction action) {
+	SoState state = action.getState();
+
+	int cnt = this.shaderObject.getNum();
+	if (cnt == 0) {
+		SoVkShaderProgramElement.set(state,this,null);
+		return;
+	}
+	SoCacheElement.invalidate(state);
+
+	this.vkShaderProgram.setOwner(this); //CORE
+	this.vkShaderProgram.removeShaderObjects();
+	this.glShaderProgram.setEnableCallback(this.enablecb,
+			this.enablecbclosure);
+
+	SoVkShaderProgramElement.set(state, this, this.vkShaderProgram);
+
+	// load shader objects
+	for (int i = 0; i <cnt; i++) {
+		SoNode node = this.shaderObject.operator_square_bracket(i).get();
+		if (node.isOfType(SoShaderObject.getClassTypeId())) {
+			((SoShaderObject )node).VkRender(action);
+		}
+	}
+
+	// enable shader after all shader objects have been loaded
+	SoVkShaderProgramElement.enable(state, true);
+
+	// update parameters after all shader objects have been added and enabled
+
+	for (int i = 0; i <cnt; i++) {
+		SoNode node = this.shaderObject.operator_square_bracket(i).get();
+		if (node.isOfType(SoShaderObject.getClassTypeId())) {
+			((SoShaderObject )node).updateParameters(state);
+		}
+	}
 }
 
 // doc from parent

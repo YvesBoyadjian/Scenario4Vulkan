@@ -725,9 +725,9 @@ public class VulkanEngine {
         }
 
         /*VkShaderModule*/final long[] meshVertShader = new long[1];
-        if (!load_shader_module("../../shaders/tri_mesh_ssbo.vert.spv", meshVertShader))
+        if (!load_shader_module("../../shaders/tri_mesh_ssbo2.vert.spv", meshVertShader))
         {
-            if (!load_shader_module("vk-bootstrap/src/vulkanguide/shaders/tri_mesh_ssbo.vert.spv", meshVertShader)) {
+            if (!load_shader_module("vk-bootstrap/src/vulkanguide/shaders/tri_mesh_ssbo2.vert.spv", meshVertShader)) {
                 System.out.println("Error when building the mesh vertex shader module");
             }
         }

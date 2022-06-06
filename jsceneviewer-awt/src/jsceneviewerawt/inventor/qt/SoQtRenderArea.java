@@ -76,8 +76,7 @@ import java.awt.event.ComponentEvent;
 import java.nio.Buffer;
 import java.util.List;
 
-import static org.lwjgl.system.MemoryUtil.memAddress;
-import static org.lwjgl.system.MemoryUtil.memAllocPointer;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
 import static vulkanguide.VulkanEngine.VK_CHECK;
@@ -350,22 +349,23 @@ processSoEvent(final SoEvent event)
 				// ________________________________________________________________________________ Object
 
 
-				PointerBuffer objectData = memAllocPointer(1);
-				vmaMapMemory(vkState.getEngine()._allocator, vkState.getEngine().get_current_frame().objectBuffer._allocation, objectData);
-
-				/*GPUObjectData*/long objectSSBO = objectData.get(0);
-
-				int count = vkState.getEngine()._renderables.size();
-				List<RenderObject> first = vkState.getEngine()._renderables;
-
-				for (int i = 0; i < count; i++)
-				{
-					RenderObject object = first.get(i);
-					GPUObjectData.setModelMatrix(objectSSBO + i* GPUObjectData.sizeof(), object.transformMatrix);
-				}
-
-				vmaUnmapMemory(vkState.getEngine()._allocator, vkState.getEngine().get_current_frame().objectBuffer._allocation);
-
+//				PointerBuffer objectData = memAllocPointer(1);
+//				vmaMapMemory(vkState.getEngine()._allocator, vkState.getEngine().get_current_frame().objectBuffer._allocation, objectData);
+//
+//				/*GPUObjectData*/long objectSSBO = objectData.get(0);
+//
+//				int count = vkState.getEngine()._renderables.size();
+//				List<RenderObject> first = vkState.getEngine()._renderables;
+//
+//				for (int i = 0; i < count; i++)
+//				{
+//					RenderObject object = first.get(i);
+//					GPUObjectData.setModelMatrix(objectSSBO + i* GPUObjectData.sizeof(), object.transformMatrix);
+//				}
+//
+//				vmaUnmapMemory(vkState.getEngine()._allocator, vkState.getEngine().get_current_frame().objectBuffer._allocation);
+//
+//				memFree(objectData);
 
 				// ________________________________________________________________________________ End Object
 

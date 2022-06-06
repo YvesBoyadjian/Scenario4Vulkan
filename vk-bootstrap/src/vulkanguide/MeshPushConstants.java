@@ -20,6 +20,7 @@ public class MeshPushConstants {
         data.get(fb);
         fb.position(4);
         render_matrix.get(fb);
+        fb.position(0);
         return fb;
     }
 }

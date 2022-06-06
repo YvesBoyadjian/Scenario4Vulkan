@@ -1082,7 +1082,8 @@ void renderFront(SoState state, SoNode node, int line,
     ShortBuffer ustr = str;
 
     final Object[] value = new Object[1];
-    for (int i = 0; i < getNumUCSChars(line); i++) {
+    int numUCSChars = getNumUCSChars(line);
+    for (int i = 0; i < numUCSChars; i++) {
         int key = Character.reverseBytes((char)ustr.get(i));//ustr[2*i]<<8 | ustr[2*i+1];  
         if (frontDict.find(key, value)) {
             frontList.callList(key,node);//gl2.glCallList(frontList.getFirstIndex()+key);
