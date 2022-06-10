@@ -2022,5 +2022,6 @@ public void jacobi3(final float[] evalues,
 				mat4.set(i,j, matrix[i][j]);
 			}
 		}
+		mat4.determineProperties();
     }
 }

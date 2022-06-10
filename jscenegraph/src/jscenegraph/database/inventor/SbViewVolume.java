@@ -189,7 +189,7 @@ public class SbViewVolume implements Mutable {
 	 * suitable for use as a projection matrix in OpenGL.
 	 * 
 	 * @param affine
-	 * @param proj
+	 * @param projM
 	 */
 	////////////////////////////////////////////////////////////////////////
 	//
@@ -202,6 +202,9 @@ public class SbViewVolume implements Mutable {
 	//
 	// Use: public
 	public void getMatrices(final SbMatrix affine, final SbMatrix projM) {
+		this.getMatrices(affine,projM,true);
+	}
+	public void getMatrices(final SbMatrix affine, final SbMatrix projM, boolean OpenGL) {
 		final SbMatrix skewMatM = new SbMatrix();
 		final float[][] skewMat = skewMatM.getValue();
 
@@ -274,26 +277,52 @@ public class SbViewVolume implements Mutable {
 		final float[][] proj = projM.getValue();
 
 		if (type == ProjectionType.ORTHOGRAPHIC) {
-			proj[0][0] = 2.0f / rightMinusLeft;
-			proj[1][1] = 2.0f / topMinusBottom;
-			proj[2][2] = -2.0f / farMinusNear;
+			if(OpenGL) {
+				proj[0][0] = 2.0f / rightMinusLeft;
+				proj[1][1] = 2.0f / topMinusBottom;
+				proj[2][2] = -2.0f / farMinusNear;
 
-			proj[3][0] = -rightPlusLeft / rightMinusLeft;
-			proj[3][1] = -topPlusBottom / topMinusBottom;
-			proj[3][2] = -farPlusNear / farMinusNear;
+				proj[3][0] = -rightPlusLeft / rightMinusLeft;
+				proj[3][1] = -topPlusBottom / topMinusBottom;
+				proj[3][2] = -farPlusNear / farMinusNear;
+			}
+			else {
+				proj[0][0] = 2.0f / rightMinusLeft;
+				proj[1][1] = - 2.0f / topMinusBottom;
+				proj[2][2] = -1.0f / farMinusNear;
+
+				proj[3][0] = -rightPlusLeft / rightMinusLeft;
+				proj[3][1] = topPlusBottom / topMinusBottom;
+				proj[3][2] = -nearDist / farMinusNear;
+			}
 		} else { // type == PERSPECTIVE
 
-			proj[0][0] = 2.0f * nearDist / rightMinusLeft;
+			if(OpenGL) {
+				proj[0][0] = 2.0f * nearDist / rightMinusLeft;
 
-			proj[1][1] = 2.0f * nearDist / topMinusBottom;
+				proj[1][1] = 2.0f * nearDist / topMinusBottom;
 
-			proj[2][0] = rightPlusLeft / rightMinusLeft;
-			proj[2][1] = topPlusBottom / topMinusBottom;
-			proj[2][2] = -farPlusNear / farMinusNear;
-			proj[2][3] = -1.0f;
+				proj[2][0] = rightPlusLeft / rightMinusLeft;
+				proj[2][1] = topPlusBottom / topMinusBottom;
+				proj[2][2] = -farPlusNear / farMinusNear;
+				proj[2][3] = -1.0f;
 
-			proj[3][2] = -2.0f * nearDist * far1 / farMinusNear;
-			proj[3][3] = 0.0f;
+				proj[3][2] = -2.0f * nearDist * far1 / farMinusNear;
+				proj[3][3] = 0.0f;
+			}
+			else { // Vulkan
+				proj[0][0] = 2.0f * nearDist / rightMinusLeft;
+
+				proj[1][1] = - 2.0f * nearDist / topMinusBottom;
+
+				proj[2][0] = rightPlusLeft / rightMinusLeft;
+				proj[2][1] = -topPlusBottom / topMinusBottom;
+				proj[2][2] = /*-farPlusNear*/nearDist / farMinusNear;
+				proj[2][3] = -1.0f;
+
+				proj[3][2] = /*-2.0f **/ nearDist * far1 / farMinusNear;
+				proj[3][3] = 0.0f;
+			}
 		}
 
 	}
@@ -331,9 +360,12 @@ public class SbViewVolume implements Mutable {
 	 * @return
 	 */
 	public SbMatrix getMatrix() {
+		return getMatrix(true);
+	}
+	public SbMatrix getMatrix(boolean OpenGL) {
 
 		final SbMatrix affine = new SbMatrix(), proj = new SbMatrix();
-		getMatrices(affine, proj);
+		getMatrices(affine, proj, OpenGL);
 
 		return affine.multRight(proj);
 	}

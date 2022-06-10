@@ -301,14 +301,6 @@ processSoEvent(final SoEvent event)
 			public int render(Init init, RenderData data, ImageData imageData) {
 
 				// _________________________________________________________________________________ Camera
-				//make a model view matrix for rendering the object
-				//camera view
-				Vector3f camPos = new Vector3f( 0.f,-6.f,-10.f );
-
-				Matrix4f view = new Matrix4f().translate(camPos);
-				//camera projection
-				Matrix4f projection = new Matrix4f().perspective((float)Math.toRadians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
-				projection.m11( projection.m11() * -1);
 
 				SoSceneManager manager = soQtSceneHandler.getSceneManager();
 				SoNode sceneGraph = manager.getSceneGraph();
@@ -319,15 +311,32 @@ processSoEvent(final SoEvent event)
 				sa.apply(sceneGraph);
 				SoCamera camera = (SoCamera)sa.getPath().getTail();
 
+				//make a model view matrix for rendering the object
+				//camera view
+				Matrix4f projection = new Matrix4f();
+				Matrix4f view = new Matrix4f();
+
+//				float[] xyz = camera.position.getValue().getValueRead();
+//				Vector3f camPos = new Vector3f(xyz);//new Vector3f( 0.f,-6.f,-10.f );
+//
+//				Matrix4f view = new Matrix4f().translate(camPos);
+//				//camera projection
+//				Matrix4f projection = new Matrix4f().perspective((float)Math.toRadians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
+//				projection.m11( projection.m11() * -1);
+
+
+
 				SbViewVolume viewVolume = camera.getViewVolume();
 
 				final SbMatrix viewMat = new SbMatrix(), projMat = new SbMatrix();
 
 				// Compute viewing and projection matrices
-				viewVolume.getMatrices(viewMat, projMat);
+				viewVolume.getMatrices(viewMat, projMat,false);
 
 				projMat.toMatrix4f(projection);
 				viewMat.toMatrix4f(view);
+
+//				projection.m11( projection.m11() * -1);
 
 				final GPUCameraData camData = new GPUCameraData();
 				camData.proj.set( projection);

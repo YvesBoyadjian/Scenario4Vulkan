@@ -930,7 +930,7 @@ GLRender(SoGLRenderAction action)
 //        }
         // Otherwise, just set culling volume to be same as view volume
 //        else
-            SoModelMatrixElement.setCullMatrix(state, this, viewVol.getMatrix());
+            SoModelMatrixElement.setCullMatrix(state, this, (state.getAction() instanceof SoVkRenderAction) ? viewVol.getMatrix(false) : viewVol.getMatrix());
 
         // Don't auto-cache above cameras:
 //        SoGLCacheContextElement.shouldAutoCache(state, TODO VK
@@ -1311,7 +1311,11 @@ setElements(final SoAction action, final SbViewVolume viewVol,
     final SbMatrix    viewMat = new SbMatrix(), projMat = new SbMatrix();
 
     // Compute viewing and projection matrices
-    viewVol.getMatrices(viewMat, projMat);
+    boolean opengl = true;
+    if(action instanceof SoVkRenderAction) {
+        opengl = false;
+    }
+    viewVol.getMatrices(viewMat, projMat,opengl);
 
     // Jitter if necessary
     if (doJitter) {
