@@ -234,6 +234,30 @@ public class VulkanEngine {
 
         VK_CHECK(vkBeginCommandBuffer(cmd, cmdBeginInfo));
 
+
+        final VkViewport.Buffer viewport = VkViewport.malloc(1);
+        final VkRect2D.Buffer scissor = VkRect2D.malloc(1);
+
+        //build viewport and scissor from the swapchain extents
+        viewport.x ( 0.0f);
+        viewport.y ( 0.0f);
+        viewport.width ( (float)_windowExtent.width());
+        viewport.height ( (float)_windowExtent.height());
+        viewport.minDepth ( 0.0f);
+        viewport.maxDepth ( 1.0f);
+
+        VkOffset2D dummyO = VkOffset2D.malloc();
+        dummyO.x(0); dummyO.y(0);
+        scissor.offset ( dummyO);
+        scissor.extent ( _windowExtent);
+
+        VK10.vkCmdSetViewport(get_current_frame()._mainCommandBuffer, 0, /*1,*/ viewport);
+        VK10.vkCmdSetScissor(get_current_frame()._mainCommandBuffer, 0, /*1,*/ scissor);
+
+        dummyO.free();
+        viewport.free();
+        scissor.free();
+
         //make a clear-color from frame number. This will flash with a 120 frame period.
         final VkClearValue clearValue = VkClearValue.create();
         float flash = (float)abs(sin(_frameNumber / 120.f));
@@ -264,6 +288,8 @@ public class VulkanEngine {
         rpInfo.pClearValues ( clearValues);
 
         vkCmdBeginRenderPass(cmd, rpInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+
 
         draw_objects(cmd, _renderables/*.data()*/, _renderables.size());
 
@@ -302,6 +328,10 @@ public class VulkanEngine {
         // _renderFence will now block until the graphic commands finish execution
         VK_CHECK(vkQueueSubmit(_graphicsQueue, /*1,*/ submit, get_current_frame()._renderFence[0]));
 
+        memFree(dummy7);
+        memFree(dummy6);
+        memFree(dummy5);
+
         //prepare present
         // this will put the image we just rendered to into the visible window.
         // we want to wait on the _renderSemaphore for that,
@@ -326,6 +356,10 @@ public class VulkanEngine {
         presentInfo.pImageIndices ( /*swapchainImageIndex*/dummy2);
 
         VK_CHECK(vkQueuePresentKHR(_graphicsQueue, presentInfo));
+
+        memFree(dummy4);
+        memFree(dummy3);
+        memFree(dummy2);
 
         //increase the number of frames drawn
         _frameNumber++;
@@ -1112,6 +1146,8 @@ public class VulkanEngine {
 
         vmaUnmapMemory(_allocator, get_current_frame().cameraBuffer._allocation);
 
+        memFree(data);
+
         double framed = ((double)System.currentTimeMillis())/1000.0;//_frameNumber / 120.f;
 
         _sceneParameters.ambientColor.set(new Vector4f( (float)sin(framed),0,(float)cos(framed),1 ));
@@ -1129,6 +1165,7 @@ public class VulkanEngine {
 
         vmaUnmapMemory(_allocator, _sceneParameterBuffer._allocation);
 
+        memFree(sceneData_);
 
         PointerBuffer objectData = memAllocPointer(1);
         vmaMapMemory(_allocator, get_current_frame().objectBuffer._allocation, objectData);
@@ -1142,6 +1179,8 @@ public class VulkanEngine {
         }
 
         vmaUnmapMemory(_allocator, get_current_frame().objectBuffer._allocation);
+
+        memFree(objectData);
 
         Mesh lastMesh = null;
         Material lastMaterial = null;

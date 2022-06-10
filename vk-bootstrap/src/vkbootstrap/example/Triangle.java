@@ -556,12 +556,12 @@ public class Triangle {
             data.image_datas.get(i).setCommandbuffer(init,data,commandBuffers.get(i));
         }
 
-        for (int i = 0; i < data.image_datas.size(); i++) {
-            int ret_val = begin_end_command_buffer(init,data,data.image_datas.get(i),renderer);
-            if( ret_val != 0) {
-                return ret_val;
-            }
-        }
+//        for (int i = 0; i < data.image_datas.size(); i++) {
+//            int ret_val = begin_end_command_buffer(init,data,data.image_datas.get(i),renderer);
+//            if( ret_val != 0) {
+//                return ret_val;
+//            }
+//        }
         return 0;
     }
 

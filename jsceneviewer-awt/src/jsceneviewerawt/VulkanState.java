@@ -46,7 +46,7 @@ public class VulkanState {
         if (0 != Triangle.create_swapchain (init)) return;
         if (0 != Triangle.get_queues (init, render_data)) return;
         if (0 != Triangle.create_render_pass (init, render_data)) return;
-        if (0 != Triangle.create_graphics_pipeline (init, render_data)) return;
+//        if (0 != Triangle.create_graphics_pipeline (init, render_data)) return;
 //        if (0 != create_framebuffers (init, render_data)) return;
 //        if (0 != create_command_pool (init, render_data)) return;
 //        if (0 != create_command_buffers (init, render_data)) return;

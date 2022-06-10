@@ -1,6 +1,7 @@
 package vulkanguide;
 
 import org.lwjgl.vulkan.*;
+import port.Port;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +43,13 @@ public class PipelineBuilder {
         //colorBlending.attachmentCount (1); java port
         colorBlending.pAttachments (_colorBlendAttachment);
 
+        final int[] dynamic_states = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+
+        final VkPipelineDynamicStateCreateInfo dynamic_info = VkPipelineDynamicStateCreateInfo.create();
+        dynamic_info.sType( VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
+        //dynamic_info.dynamicStateCount( dynamic_states.length); java port
+        dynamic_info.pDynamicStates( Port.toIntBuffer(dynamic_states));
+
         //build the actual pipeline
         //we now use all of the info structs we have been writing into into this one to create the pipeline
         final VkGraphicsPipelineCreateInfo.Buffer pipelineInfo = VkGraphicsPipelineCreateInfo.create(1);
@@ -59,6 +67,7 @@ public class PipelineBuilder {
         pipelineInfo.pMultisampleState (_multisampling);
         pipelineInfo.pColorBlendState (colorBlending);
         pipelineInfo.pDepthStencilState (_depthStencil);
+        pipelineInfo.pDynamicState(dynamic_info);
         pipelineInfo.layout (_pipelineLayout);
         pipelineInfo.renderPass (pass);
         pipelineInfo.subpass (0);
