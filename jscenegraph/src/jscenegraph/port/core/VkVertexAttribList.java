@@ -164,16 +164,15 @@ public class VkVertexAttribList extends VertexAttribList {
 
             int numVertices = vertices.size()/3;
 
-            if (0==numVertices) {
-                return;
+            if (0!=numVertices) {
+
+                VkCommandBuffer cmd = SoVkRenderVarsElement.getImageData(state).command_buffer;
+                final long[] offset = new long[1];
+
+                VK10.vkCmdBindVertexBuffers(cmd,0,vertexBuffer._buffer,offset);
+                vkCmdDraw(cmd,numVertices,1,0,0);
+
             }
-
-            VkCommandBuffer cmd = SoVkRenderVarsElement.getImageData(state).command_buffer;
-            final long[] offset = new long[1];
-
-            VK10.vkCmdBindVertexBuffers(cmd,0,vertexBuffer._buffer,offset);
-            vkCmdDraw(cmd,numVertices,1,0,0);
-
             //gl2.glBindBuffer(GL_ARRAY_BUFFER,vbo[0]);
             //gl2.glVertexAttribPointer(0,3,GL_FLOAT,false,/*3*Float.BYTES*/0,0);
 

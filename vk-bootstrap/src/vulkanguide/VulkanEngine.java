@@ -361,6 +361,8 @@ public class VulkanEngine {
         memFree(dummy3);
         memFree(dummy2);
 
+        //vkQueueWaitIdle(_graphicsQueue);
+
         //increase the number of frames drawn
         _frameNumber++;
     }
