@@ -278,17 +278,6 @@ processSoEvent(final SoEvent event)
 		Renderer renderer = new Renderer() {
 			@Override
 			public int render(Init init, RenderData data, ImageData imageData) {
-
-				init.arrow_operator().vkCmdBindPipeline.invoke (imageData.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, data.graphics_pipeline[0]);
-
-				init.arrow_operator().vkCmdDraw.invoke (imageData.command_buffer, 3, 1, 0, 0);
-				return 0;
-			}
-		};
-
-		renderer = new Renderer() {
-			@Override
-			public int render(Init init, RenderData data, ImageData imageData) {
 				VkCommandBuffer cmd = imageData.command_buffer;
 				engine.draw_objects(cmd, engine._renderables/*.data()*/, engine._renderables.size());
 				engine._frameNumber++;
@@ -330,7 +319,6 @@ processSoEvent(final SoEvent event)
 		};
 
 		vkState.draw_VK(renderer);
-//		getSceneHandler().getSceneGraph().touch();//render();
 		engine._frameNumber++;
 		initialRendering = false;
 	}
