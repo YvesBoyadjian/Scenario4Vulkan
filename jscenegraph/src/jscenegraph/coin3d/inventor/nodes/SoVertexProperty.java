@@ -675,6 +675,7 @@ public class SoVertexProperty extends SoNode {
 	  SO_ENABLE(SoGLRenderAction.class, SoGLCoordinateElement.class);
 	  SO_ENABLE(SoGLRenderAction.class, SoMaterialBindingElement.class);
 	  SO_ENABLE(SoGLRenderAction.class, SoNormalBindingElement.class);
+		SO_ENABLE(SoVkRenderAction.class, SoNormalBindingElement.class);
 	  SO_ENABLE(SoGLRenderAction.class, SoGLNormalElement.class);
 		SO_ENABLE(SoVkRenderAction.class, SoVkNormalElement.class);
 	  SO_ENABLE(SoGLRenderAction.class, SoGLMultiTextureCoordinateElement.class);

@@ -284,6 +284,24 @@ public abstract class SoShape extends SoNode implements Destroyable {
     	  
       }
 
+        public void drawArraysVk(SoShape shape, SoVkRenderAction action, /*GLenum*/int primitiveType) {
+            SoState state = action.getState();
+            enableVertexAttributes(state);
+
+//            if (/*shape.*/_preVertexArrayRenderingCB != null) { TODO VULKAN
+//                (/*shape.*/_preVertexArrayRenderingCB).run(shape, action, true, numVertices);
+//            }
+
+            SoLazyElement.drawArrays(state, primitiveType, 0, numVertices);
+
+//            if (/*shape.*/_postVertexArrayRenderingCB != null) { // TODO VULKAN
+//                (/*shape.*/_postVertexArrayRenderingCB).run(shape, action, true, numVertices);
+//            }
+
+            disableVertexAttributes(state);
+
+        }
+
       void enableVertexAttributes(SoState state) {
   boolean useVertexAttributes = SoLazyElement.shouldUseVertexAttributes(state);
   

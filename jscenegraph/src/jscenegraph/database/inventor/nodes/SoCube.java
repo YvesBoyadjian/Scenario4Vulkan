@@ -371,6 +371,63 @@ GLRender(SoGLRenderAction action)
   mb.destructor(); // java port
 }
 
+    public void
+    VkRender(SoVkRenderAction action)
+    {
+        if (!this.shouldVkRender(action)) return;
+        SoState state = action.getState();
+
+        SoMaterialBindingElement.Binding binding =
+                SoMaterialBindingElement.get(state);
+
+        boolean materialPerPart =
+                (binding == SoMaterialBindingElement.Binding.PER_PART ||
+                        binding == SoMaterialBindingElement.Binding.PER_PART_INDEXED ||
+                        binding == SoMaterialBindingElement.Binding.PER_FACE ||
+                        binding == SoMaterialBindingElement.Binding.PER_FACE_INDEXED);
+
+        boolean doTextures = false;
+        boolean do3DTextures = false;
+        if (SoGLMultiTextureEnabledElement.get(state, 0)) {
+            doTextures = true;
+            if (SoGLMultiTextureEnabledElement.getMode(state,0) ==
+                    SoMultiTextureEnabledElement.Mode.TEXTURE3D) {
+                do3DTextures = true;
+            }
+        }
+
+        final SoMaterialBundle mb = new SoMaterialBundle(action);
+        mb.sendFirst();
+
+        boolean sendNormals = !mb.isColorOnly() ||
+                (SoMultiTextureCoordinateElement.getType(state) == SoMultiTextureCoordinateElement.CoordType.FUNCTION);
+
+        int flags = 0;
+        if (materialPerPart) flags |= SoGL.SOGL_MATERIAL_PER_PART;
+        if (doTextures) {
+            switch (SoMultiTextureEnabledElement.getMode(state, 0)) {
+                default:
+                    flags |= SoGL.SOGL_NEED_TEXCOORDS;
+                    break;
+                case CUBEMAP:
+                    flags |= SoGL.SOGL_NEED_3DTEXCOORDS;
+                    break;
+            }
+        }
+        else if (do3DTextures) flags |= SoGL.SOGL_NEED_3DTEXCOORDS;
+        if (sendNormals) flags |= SoGL.SOGL_NEED_NORMALS;
+
+//  SoGL.sogl_render_cube(width.getValue(), //COIN3D
+//                   height.getValue(),
+//                   depth.getValue(),
+//                   mb,
+//                   flags, state);
+
+        VkRenderVertexArray(action,
+                sendNormals, doTextures);
+
+        mb.destructor(); // java port
+    }
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -766,6 +823,110 @@ rayPickBoundingBox(SoRayPickAction action, final SbBox3f bbox)
   mb.destructor(); // java port
 }
 
+    void VkRenderVertexArray(SoVkRenderAction action,
+                             boolean sendNormals, boolean doTextures)
+    {
+        SoState state = action.getState();
+        getSize(scale);
+
+        boolean              materialPerFace;
+        //final SbVec3f             pt = new SbVec3f(), norm = new SbVec3f();
+        final SoMaterialBundle    mb = new SoMaterialBundle(action);
+
+        materialPerFace = isMaterialPerFace(action);
+
+        // Make sure first material is sent if necessary
+        if (materialPerFace) {
+            mb.setUpMultiple();
+        }
+        mb.sendFirst();
+
+        _cache.useColors = true;
+        _cache.useNormals = sendNormals;
+        _cache.useTexCoords = doTextures;
+
+        _cache.numVertices = numVertices;
+
+        FloatPtr verticesPtr = new FloatPtr(data);
+        FloatPtr normalsPtr = verticesPtr.operator_add(numVertices*3);
+        FloatPtr texCoordsPtr = normalsPtr.operator_add(numVertices*3);
+        IntPtr colorsPtr = new IntPtr(texCoordsPtr.operator_add(numVertices*2));
+        CharPtr vertexOffset = new CharPtr(verticesPtr);
+        CharPtr normalOffset = new CharPtr(normalsPtr);
+        CharPtr texCoordOffset = new CharPtr(texCoordsPtr);
+        CharPtr colorOffset = new CharPtr(colorsPtr);
+
+        IntArrayPtr colors =  SoLazyElement.getPackedColors(state);
+        int color = colors.get(0);
+        final SbVec3fSingle normal = new SbVec3fSingle();
+        for (int face = 0; face < 6; face++) {
+            if (materialPerFace && face > 0) {
+                color = colors.get(face);
+            }
+            if (sendNormals) {
+                normal.copyFrom(normals[face]);
+            }
+            for (int tri = 0; tri < 6; tri++) {
+                int vert = indices[tri];
+                SoMachine.DGL_HTON_INT32(swappedColor, color);
+                colorsPtr.asterisk(swappedColor[0]); colorsPtr.plusPlus();
+                if (doTextures) {
+                    float[] tmp = texCoords[vert].getValueRead();
+                    texCoordsPtr.asterisk(tmp[0]); texCoordsPtr.plusPlus();
+                    texCoordsPtr.asterisk(tmp[1]); texCoordsPtr.plusPlus();
+                }
+                if (sendNormals) {
+                    final float[] tmp = normal.getValue();
+                    normalsPtr.asterisk(tmp[0]); normalsPtr.plusPlus();
+                    normalsPtr.asterisk(tmp[1]); normalsPtr.plusPlus();
+                    normalsPtr.asterisk(tmp[2]); normalsPtr.plusPlus();
+                }
+                verticesPtr.asterisk( (verts[face][vert]).getX()*scale.getValue()[0]); verticesPtr.plusPlus();
+                verticesPtr.asterisk( (verts[face][vert]).getY()*scale.getValue()[1]); verticesPtr.plusPlus();
+                verticesPtr.asterisk( (verts[face][vert]).getZ()*scale.getValue()[2]); verticesPtr.plusPlus();
+            }
+        }
+
+        GL2 gl2 = Ctx.get(action.getCacheContext());
+
+        _cache.vbo.setData(numBytes, null, 0, state);
+        _cache.vbo.bind(state);
+        _cache.vbo.updateData(gl2,data);
+
+        _cache.vertexOffset = (vertexOffset.minus(data));
+        _cache.colorOffset = (colorOffset.minus(data));
+        _cache.normalOffset = (normalOffset.minus(data));
+        _cache.texCoordOffset = (texCoordOffset.minus(data));
+
+        if(sendNormals) {
+
+            int pHandle = SoGLShaderProgramElement.get(state).getGLSLShaderProgramHandle(state);
+            if(pHandle >0 ) {
+                int perVertexLocation = state.getGL2().glGetUniformLocation(pHandle, "s4j_PerVertexNormal");
+                if (perVertexLocation >= 0) {
+                    state.getGL2().glUniform1i(perVertexLocation, 1);
+                }
+            }
+
+        }
+
+        _cache.drawArraysVk(this, action, GL2.GL_TRIANGLES);
+        _cache.vbo.unbind(gl2);
+
+        if(sendNormals) {
+
+            int pHandle = SoGLShaderProgramElement.get(state).getGLSLShaderProgramHandle(state);
+            if(pHandle >0 ) {
+                int perVertexLocation = state.getGL2().glGetUniformLocation(pHandle, "s4j_PerVertexNormal");
+                if (perVertexLocation >= 0) {
+                    state.getGL2().glUniform1i(perVertexLocation, 0);
+                }
+            }
+
+        }
+
+        mb.destructor(); // java port
+    }
 
 ////////////////////////////////////////////////////////////////////////
 //
