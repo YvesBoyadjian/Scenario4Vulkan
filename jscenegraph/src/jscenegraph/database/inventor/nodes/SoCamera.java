@@ -59,6 +59,10 @@ import static com.jogamp.opengl.GL2.GL_LINE_STIPPLE;
 import static com.jogamp.opengl.GL2.GL_POLYGON_STIPPLE;
 import static com.jogamp.opengl.GL2GL3.GL_FILL;
 import static com.jogamp.opengl.GL2GL3.GL_LINE;
+import static org.lwjgl.system.MemoryUtil.memAddress;
+import static org.lwjgl.system.MemoryUtil.memAllocPointer;
+import static org.lwjgl.util.vma.Vma.vmaMapMemory;
+import static org.lwjgl.util.vma.Vma.vmaUnmapMemory;
 
 import com.jogamp.opengl.GL2;
 
@@ -75,30 +79,22 @@ import jscenegraph.database.inventor.SbViewportRegion;
 import jscenegraph.database.inventor.SoPath;
 import jscenegraph.database.inventor.SoType;
 import jscenegraph.database.inventor.actions.*;
-import jscenegraph.database.inventor.elements.SoCullElement;
-import jscenegraph.database.inventor.elements.SoDrawStyleElement;
-import jscenegraph.database.inventor.elements.SoFocalDistanceElement;
-import jscenegraph.database.inventor.elements.SoGLCacheContextElement;
-import jscenegraph.database.inventor.elements.SoGLLazyElement;
-import jscenegraph.database.inventor.elements.SoGLProjectionMatrixElement;
-import jscenegraph.database.inventor.elements.SoGLRenderPassElement;
-import jscenegraph.database.inventor.elements.SoGLShapeHintsElement;
-import jscenegraph.database.inventor.elements.SoGLUpdateAreaElement;
-import jscenegraph.database.inventor.elements.SoGLViewingMatrixElement;
-import jscenegraph.database.inventor.elements.SoGLViewportRegionElement;
-import jscenegraph.database.inventor.elements.SoLineWidthElement;
-import jscenegraph.database.inventor.elements.SoModelMatrixElement;
-import jscenegraph.database.inventor.elements.SoProjectionMatrixElement;
-import jscenegraph.database.inventor.elements.SoViewVolumeElement;
-import jscenegraph.database.inventor.elements.SoViewingMatrixElement;
-import jscenegraph.database.inventor.elements.SoViewportRegionElement;
+import jscenegraph.database.inventor.elements.*;
 import jscenegraph.database.inventor.fields.SoFieldData;
 import jscenegraph.database.inventor.fields.SoSFEnum;
 import jscenegraph.database.inventor.fields.SoSFFloat;
 import jscenegraph.database.inventor.fields.SoSFRotation;
 import jscenegraph.database.inventor.fields.SoSFVec3f;
 import jscenegraph.database.inventor.misc.SoState;
+import jscenegraph.interaction.inventor.SoSceneManager;
 import jscenegraph.port.Ctx;
+import org.joml.Matrix4f;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.MemoryUtil;
+import vulkanguide.GPUCameraData;
+import vulkanguide.VulkanEngine;
+
+import java.nio.Buffer;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -935,6 +931,44 @@ GLRender(SoGLRenderAction action)
         // Don't auto-cache above cameras:
 //        SoGLCacheContextElement.shouldAutoCache(state, TODO VK
 //                SoGLCacheContextElement.AutoCache.DONT_AUTO_CACHE.getValue());
+
+
+        // _________________________________________________________________________________ Camera
+        SoCamera camera = this;
+
+        //make a model view matrix for rendering the object
+        //camera view
+        Matrix4f projection = new Matrix4f();
+        Matrix4f view = new Matrix4f();
+
+        SbViewVolume viewVolume = camera.getViewVolume();
+
+        // Compute viewing and projection matrices
+        viewVolume.getMatrices(viewMat, projMat,false);
+
+        projMat.toMatrix4f(projection);
+        viewMat.toMatrix4f(view);
+
+        final GPUCameraData camData = new GPUCameraData();
+        camData.proj.set( projection);
+        camData.view.set( view);
+        camData.viewproj.set( projection.mul( view));
+
+        PointerBuffer dataCam = memAllocPointer(1);
+
+        VulkanEngine engine = SoVkRenderVarsElement.getRenderData(state).getEngine();
+
+        vmaMapMemory(engine._allocator, engine.get_current_frame().cameraBuffer._allocation, dataCam);
+
+        Buffer dummy = camData.toBuffer();
+
+        /*memcpy*/
+        MemoryUtil.memCopy(/*data,*/ /*camData*/memAddress(dummy), dataCam.get(), GPUCameraData.sizeof());
+
+        vmaUnmapMemory(engine._allocator, engine.get_current_frame().cameraBuffer._allocation);
+
+        // ________________________________________________________________________________ End camera
+
     }
 
 ////////////////////////////////////////////////////////////////////////
