@@ -53,10 +53,7 @@ package jscenegraph.database.inventor.nodes;
 
 import jscenegraph.database.inventor.SoInput;
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoPickAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.elements.SoTextureCoordinateBindingElement;
 import jscenegraph.database.inventor.fields.SoFieldData;
 import jscenegraph.database.inventor.fields.SoSFEnum;
@@ -302,6 +299,7 @@ public static void initClass()
     // Enable elements for appropriate actions:
     SO_ENABLE(SoCallbackAction.class, SoTextureCoordinateBindingElement.class);
     SO_ENABLE(SoGLRenderAction.class, SoTextureCoordinateBindingElement.class);
+	SO_ENABLE(SoVkRenderAction.class, SoTextureCoordinateBindingElement.class);
     SO_ENABLE(SoPickAction.class, SoTextureCoordinateBindingElement.class);
 }
 

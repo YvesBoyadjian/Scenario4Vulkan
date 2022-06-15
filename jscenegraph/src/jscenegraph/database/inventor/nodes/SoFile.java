@@ -58,14 +58,7 @@ import jscenegraph.database.inventor.SbVec3f;
 import jscenegraph.database.inventor.SoDB;
 import jscenegraph.database.inventor.SoInput;
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetBoundingBoxAction;
-import jscenegraph.database.inventor.actions.SoGetMatrixAction;
-import jscenegraph.database.inventor.actions.SoHandleEventAction;
-import jscenegraph.database.inventor.actions.SoPickAction;
-import jscenegraph.database.inventor.actions.SoSearchAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.errors.SoReadError;
 import jscenegraph.database.inventor.fields.SoFieldData;
 import jscenegraph.database.inventor.fields.SoSFString;
@@ -434,6 +427,20 @@ public void GLRender(SoGLRenderAction action)
 {
     SoFile_doAction(action);
 }
+
+////////////////////////////////////////////////////////////////////////
+//
+// Description:
+//    Does the GL render action
+//
+// Use: extender
+
+    public void VkRender(SoVkRenderAction action)
+
+////////////////////////////////////////////////////////////////////////
+    {
+        SoFile_doAction(action);
+    }
 
 ////////////////////////////////////////////////////////////////////////
 //

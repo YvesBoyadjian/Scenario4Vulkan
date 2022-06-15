@@ -7,12 +7,7 @@ import com.jogamp.opengl.GL2;
 
 import jscenegraph.database.inventor.SbVec3f;
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetBoundingBoxAction;
-import jscenegraph.database.inventor.actions.SoGetPrimitiveCountAction;
-import jscenegraph.database.inventor.actions.SoPickAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.elements.SoCoordinateElement;
 import jscenegraph.database.inventor.elements.SoGLCoordinateElement;
 import jscenegraph.database.inventor.fields.SoFieldData;
@@ -128,6 +123,11 @@ GLRender(SoGLRenderAction action)
   }
   SoBase.staticDataUnlock();
   SoGLVBOElement.setVertexVBO(state, setvbo ? this.pimpl.vbo : null);
+}
+
+public void VkRender(SoVkRenderAction action) {
+    SoCoordinate3_doAction(action);
+    // TODO VULKAN
 }
 
 // Doc from superclass.
