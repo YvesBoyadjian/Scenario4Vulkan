@@ -78,23 +78,19 @@ import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.bundles.SoMaterialBundle;
 import jscenegraph.database.inventor.details.SoCubeDetail;
 import jscenegraph.database.inventor.details.SoDetail;
-import jscenegraph.database.inventor.elements.SoComplexityElement;
-import jscenegraph.database.inventor.elements.SoComplexityTypeElement;
-import jscenegraph.database.inventor.elements.SoDrawStyleElement;
-import jscenegraph.database.inventor.elements.SoGLCacheContextElement;
-import jscenegraph.database.inventor.elements.SoLazyElement;
-import jscenegraph.database.inventor.elements.SoLightModelElement;
-import jscenegraph.database.inventor.elements.SoMaterialBindingElement;
-import jscenegraph.database.inventor.elements.SoModelMatrixElement;
+import jscenegraph.database.inventor.elements.*;
 import jscenegraph.database.inventor.fields.SoFieldData;
 import jscenegraph.database.inventor.fields.SoSFFloat;
 import jscenegraph.database.inventor.misc.SoState;
 import jscenegraph.mevis.inventor.misc.SoVBO;
-import jscenegraph.port.CharPtr;
-import jscenegraph.port.Ctx;
-import jscenegraph.port.FloatPtr;
-import jscenegraph.port.IntArrayPtr;
-import jscenegraph.port.IntPtr;
+import jscenegraph.port.*;
+import jscenegraph.port.core.VkBuffer;
+import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.vulkan.VK10;
+import org.lwjgl.vulkan.VkDevice;
+import org.lwjgl.vulkan.VkQueue;
+
+import java.nio.FloatBuffer;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -214,6 +210,7 @@ public		    final SoSFFloat           depth = new SoSFFloat();
 	
   private final CacheState _cache = new CacheState();
 
+    private VkBuffer buffer;
   
 ////////////////////////////////////////////////////////////////////////
 //
@@ -847,83 +844,106 @@ rayPickBoundingBox(SoRayPickAction action, final SbBox3f bbox)
 
         _cache.numVertices = numVertices;
 
-        FloatPtr verticesPtr = new FloatPtr(data);
-        FloatPtr normalsPtr = verticesPtr.operator_add(numVertices*3);
-        FloatPtr texCoordsPtr = normalsPtr.operator_add(numVertices*3);
-        IntPtr colorsPtr = new IntPtr(texCoordsPtr.operator_add(numVertices*2));
-        CharPtr vertexOffset = new CharPtr(verticesPtr);
-        CharPtr normalOffset = new CharPtr(normalsPtr);
-        CharPtr texCoordOffset = new CharPtr(texCoordsPtr);
-        CharPtr colorOffset = new CharPtr(colorsPtr);
+        if(buffer == null) {
 
-        IntArrayPtr colors =  SoLazyElement.getPackedColors(state);
-        int color = colors.get(0);
-        final SbVec3fSingle normal = new SbVec3fSingle();
-        for (int face = 0; face < 6; face++) {
-            if (materialPerFace && face > 0) {
-                color = colors.get(face);
-            }
-            if (sendNormals) {
-                normal.copyFrom(normals[face]);
-            }
-            for (int tri = 0; tri < 6; tri++) {
-                int vert = indices[tri];
-                SoMachine.DGL_HTON_INT32(swappedColor, color);
-                colorsPtr.asterisk(swappedColor[0]); colorsPtr.plusPlus();
-                if (doTextures) {
-                    float[] tmp = texCoords[vert].getValueRead();
-                    texCoordsPtr.asterisk(tmp[0]); texCoordsPtr.plusPlus();
-                    texCoordsPtr.asterisk(tmp[1]); texCoordsPtr.plusPlus();
+            FloatPtr verticesPtr = new FloatPtr(data);
+            FloatPtr normalsPtr = verticesPtr.operator_add(numVertices * 3);
+            FloatPtr texCoordsPtr = normalsPtr.operator_add(numVertices * 3);
+            IntPtr colorsPtr = new IntPtr(texCoordsPtr.operator_add(numVertices * 2));
+            CharPtr vertexOffset = new CharPtr(verticesPtr);
+            CharPtr normalOffset = new CharPtr(normalsPtr);
+            CharPtr texCoordOffset = new CharPtr(texCoordsPtr);
+            CharPtr colorOffset = new CharPtr(colorsPtr);
+
+            IntArrayPtr colors = SoLazyElement.getPackedColors(state);
+            int color = colors.get(0);
+            final SbVec3fSingle normal = new SbVec3fSingle();
+            for (int face = 0; face < 6; face++) {
+                if (materialPerFace && face > 0) {
+                    color = colors.get(face);
                 }
                 if (sendNormals) {
-                    final float[] tmp = normal.getValue();
-                    normalsPtr.asterisk(tmp[0]); normalsPtr.plusPlus();
-                    normalsPtr.asterisk(tmp[1]); normalsPtr.plusPlus();
-                    normalsPtr.asterisk(tmp[2]); normalsPtr.plusPlus();
+                    normal.copyFrom(normals[face]);
                 }
-                verticesPtr.asterisk( (verts[face][vert]).getX()*scale.getValue()[0]); verticesPtr.plusPlus();
-                verticesPtr.asterisk( (verts[face][vert]).getY()*scale.getValue()[1]); verticesPtr.plusPlus();
-                verticesPtr.asterisk( (verts[face][vert]).getZ()*scale.getValue()[2]); verticesPtr.plusPlus();
-            }
-        }
-
-        GL2 gl2 = Ctx.get(action.getCacheContext());
-
-        _cache.vbo.setData(numBytes, null, 0, state);
-        _cache.vbo.bind(state);
-        _cache.vbo.updateData(gl2,data);
-
-        _cache.vertexOffset = (vertexOffset.minus(data));
-        _cache.colorOffset = (colorOffset.minus(data));
-        _cache.normalOffset = (normalOffset.minus(data));
-        _cache.texCoordOffset = (texCoordOffset.minus(data));
-
-        if(sendNormals) {
-
-            int pHandle = SoGLShaderProgramElement.get(state).getGLSLShaderProgramHandle(state);
-            if(pHandle >0 ) {
-                int perVertexLocation = state.getGL2().glGetUniformLocation(pHandle, "s4j_PerVertexNormal");
-                if (perVertexLocation >= 0) {
-                    state.getGL2().glUniform1i(perVertexLocation, 1);
-                }
-            }
-
-        }
-
-        _cache.drawArraysVk(this, action, GL2.GL_TRIANGLES);
-        _cache.vbo.unbind(gl2);
-
-        if(sendNormals) {
-
-            int pHandle = SoGLShaderProgramElement.get(state).getGLSLShaderProgramHandle(state);
-            if(pHandle >0 ) {
-                int perVertexLocation = state.getGL2().glGetUniformLocation(pHandle, "s4j_PerVertexNormal");
-                if (perVertexLocation >= 0) {
-                    state.getGL2().glUniform1i(perVertexLocation, 0);
+                for (int tri = 0; tri < 6; tri++) {
+                    int vert = indices[tri];
+                    SoMachine.DGL_HTON_INT32(swappedColor, color);
+                    colorsPtr.asterisk(swappedColor[0]);
+                    colorsPtr.plusPlus();
+                    if (doTextures) {
+                        float[] tmp = texCoords[vert].getValueRead();
+                        texCoordsPtr.asterisk(tmp[0]);
+                        texCoordsPtr.plusPlus();
+                        texCoordsPtr.asterisk(tmp[1]);
+                        texCoordsPtr.plusPlus();
+                    }
+                    if (sendNormals) {
+                        final float[] tmp = normal.getValue();
+                        normalsPtr.asterisk(tmp[0]);
+                        normalsPtr.plusPlus();
+                        normalsPtr.asterisk(tmp[1]);
+                        normalsPtr.plusPlus();
+                        normalsPtr.asterisk(tmp[2]);
+                        normalsPtr.plusPlus();
+                    }
+                    verticesPtr.asterisk((verts[face][vert]).getX() * scale.getValue()[0]);
+                    verticesPtr.plusPlus();
+                    verticesPtr.asterisk((verts[face][vert]).getY() * scale.getValue()[1]);
+                    verticesPtr.plusPlus();
+                    verticesPtr.asterisk((verts[face][vert]).getZ() * scale.getValue()[2]);
+                    verticesPtr.plusPlus();
                 }
             }
 
+            GL2 gl2 = Ctx.get(action.getCacheContext());
+
+            FloatBuffer vertexBuffer = MemoryUtil.memAllocFloat(numVertices * 3);
+            FloatBuffer inputBuffer = verticesPtr.getBuffer().asFloatBuffer().slice();
+            inputBuffer.limit(numVertices * 3);
+            vertexBuffer.put(inputBuffer);
+            vertexBuffer.flip();
+
+            buffer = new VkBuffer(state, vertexBuffer);
         }
+        buffer.call();
+
+//        _cache.vbo.setData(numBytes, null, 0, state);
+//        _cache.vbo.bind(state);
+//        _cache.vbo.updateData(gl2,data);
+
+//        _cache.vertexOffset = (vertexOffset.minus(data));
+//        _cache.colorOffset = (colorOffset.minus(data));
+//        _cache.normalOffset = (normalOffset.minus(data));
+//        _cache.texCoordOffset = (texCoordOffset.minus(data));
+
+//        if(sendNormals) {
+//
+//            int pHandle = SoGLShaderProgramElement.get(state).getGLSLShaderProgramHandle(state);
+//            if(pHandle >0 ) {
+//                int perVertexLocation = state.getGL2().glGetUniformLocation(pHandle, "s4j_PerVertexNormal");
+//                if (perVertexLocation >= 0) {
+//                    state.getGL2().glUniform1i(perVertexLocation, 1);
+//                }
+//            }
+//
+//        }
+
+//        _cache.drawArraysVk(this, action, GL2.GL_TRIANGLES);
+//        _cache.vbo.unbind(gl2);
+
+//        if(sendNormals) {
+//
+//            int pHandle = SoGLShaderProgramElement.get(state).getGLSLShaderProgramHandle(state);
+//            if(pHandle >0 ) {
+//                int perVertexLocation = state.getGL2().glGetUniformLocation(pHandle, "s4j_PerVertexNormal");
+//                if (perVertexLocation >= 0) {
+//                    state.getGL2().glUniform1i(perVertexLocation, 0);
+//                }
+//            }
+//
+//        }
+
+        // buffer.destructor(); // java port
 
         mb.destructor(); // java port
     }
@@ -1392,6 +1412,18 @@ public static void initClass()
 {
     SoSubNode.SO__NODE_INIT_CLASS(SoCube.class, "Cube", SoShape.class);
 }
+
+
+    /*!
+    Destructor.
+  */
+    public void destructor()
+    {
+        if(buffer != null) {
+            buffer.destructor();
+        }
+        super.destructor();
+    }
 
 
 }

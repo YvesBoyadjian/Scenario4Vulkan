@@ -81,6 +81,6 @@ public class SoBundle {
     public SoBundle(SoAction action)          { state = action.getState(); }
 
     public void destructor() {
-    	// do nothing
+    	state = null;
     }
 }

@@ -624,7 +624,11 @@ public class Triangle {
 
             init.arrow_operator().vkCmdBeginRenderPass.invoke (imageData.command_buffer, render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-            renderer.render(init, data, imageData);
+            try {
+                renderer.render(init, data, imageData);
+            } catch (RuntimeException e) {
+                e.printStackTrace();
+            }
 
             init.arrow_operator().vkCmdEndRenderPass.invoke (imageData.command_buffer);
 

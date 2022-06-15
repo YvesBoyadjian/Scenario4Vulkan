@@ -497,7 +497,10 @@ sceneSensorCallback(SoSceneManager mgr, SoSensor sensor)
 	      
 	          if (renderAction != null)
 	              renderAction.setViewportRegion(rgn);
-	      
+
+		if (vkRenderAction != null)
+			vkRenderAction.setViewportRegion(rgn);
+
 	          if (handleEventAction != null)
 	              handleEventAction.setViewportRegion(rgn);
 	      

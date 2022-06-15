@@ -3,6 +3,7 @@ package jscenegraph.database.inventor.actions;
 import jscenegraph.database.inventor.*;
 import jscenegraph.database.inventor.elements.*;
 import jscenegraph.database.inventor.misc.SoState;
+import jscenegraph.database.inventor.nodes.SoNode;
 import jscenegraph.port.Destroyable;
 
 public class SoVkRenderAction extends SoAction implements Destroyable {
@@ -18,6 +19,16 @@ public class SoVkRenderAction extends SoAction implements Destroyable {
     public int getCacheContext() {
         return 0;
     }
+
+    public void setViewportRegion(SbViewportRegion newRegion) {
+        viewport.copyFrom(newRegion);
+    }
+
+    /**
+     * Returns viewport region to use for rendering.
+     */
+    //! Returns viewport region to use for rendering.
+    public SbViewportRegion getViewportRegion() { return viewport; }
 
     //! Possible return codes from a render abort callback
     public enum AbortCode {
@@ -203,4 +214,8 @@ public class SoVkRenderAction extends SoAction implements Destroyable {
         SO_ENABLE(SoVkRenderAction.class, SoVkRenderVarsElement.class);
     }
 
+    public void beginTraversal(SoNode node) {
+        SoViewportRegionElement.set(state, this.viewport);
+        super.beginTraversal(node);
+    }
 }

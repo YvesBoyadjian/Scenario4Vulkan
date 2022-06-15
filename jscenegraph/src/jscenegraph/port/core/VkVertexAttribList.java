@@ -37,8 +37,6 @@ public class VkVertexAttribList extends VertexAttribList {
         final SbVec3fSingle translation = new SbVec3fSingle();
         java.util.List<Float> vertices;
         final AllocatedBuffer vertexBuffer = new AllocatedBuffer();
-        final int[] vbo = new int[1];
-        SbVec3fArray vboArray;
 
         public VkList(GL2 gl2) {
             this.gl2 = gl2;

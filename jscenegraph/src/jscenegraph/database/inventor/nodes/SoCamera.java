@@ -492,8 +492,10 @@ viewAll(SoPath path, final SbViewportRegion vpRegion, float slack)
 
          // COIN 3D
          SO_ENABLE(SoGLRenderAction.class, SoFocalDistanceElement.class);
+         SO_ENABLE(SoVkRenderAction.class, SoFocalDistanceElement.class);
          SO_ENABLE(SoGLRenderAction.class, SoGLProjectionMatrixElement.class);
          SO_ENABLE(SoGLRenderAction.class, SoViewVolumeElement.class);
+         SO_ENABLE(SoVkRenderAction.class, SoViewVolumeElement.class);
          SO_ENABLE(SoGLRenderAction.class, SoGLViewingMatrixElement.class);
          //SO_ENABLE(SoGLRenderAction.class, SoResetMatrixElement.class);
          SO_ENABLE(SoGLRenderAction.class, SoCullElement.class);
@@ -898,7 +900,7 @@ GLRender(SoGLRenderAction action)
         final SoState             state = action.getState();
 
         // Get the current viewport region
-        final SbViewportRegion vpReg = SoGLViewportRegionElement.get(state);
+        final SbViewportRegion vpReg = SoViewportRegionElement.get(state);
 
         // Compute the view volume
         SoCamera_computeView(vpReg, viewVol, changeRegion);
@@ -941,7 +943,7 @@ GLRender(SoGLRenderAction action)
         Matrix4f projection = new Matrix4f();
         Matrix4f view = new Matrix4f();
 
-        SbViewVolume viewVolume = camera.getViewVolume();
+        SbViewVolume viewVolume = viewVol;
 
         // Compute viewing and projection matrices
         viewVolume.getMatrices(viewMat, projMat,false);
