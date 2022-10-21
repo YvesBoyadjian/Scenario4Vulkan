@@ -171,6 +171,7 @@ public class SoGroup extends SoNode implements Destroyable {
 	   
 	   public void destructor() {
 		   children.destructor();
+		   children = null;
 		   super.destructor();
 	   }
 	    	   	
