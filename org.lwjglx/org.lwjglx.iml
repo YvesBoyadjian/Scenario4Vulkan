@@ -9,5 +9,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="vk-bootstrap" />
+    <orderEntry type="module" module-name="maventest" />
   </component>
 </module>
