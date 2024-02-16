@@ -394,10 +394,11 @@ public class Triangle {
         depthStencil = VkInit.depth_stencil_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
         pipeline_info.set(
-                VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-                (long)0,
-                (int)0,
-                shader_stages,
+                VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // sType
+                (long)0, // pNext
+                (int)0, // flags
+                2, // stageCount
+                shader_stages, //
                 vertex_input_info,
                 input_assembly,
                 (VkPipelineTessellationStateCreateInfo)null,
