@@ -94,7 +94,7 @@ public class VkbInstanceBuilder {
         if (sys_info_ret.not()) return new Result(sys_info_ret.error());
         var system = sys_info_ret.value();
 
-        int api_version = VK_MAKE_VERSION(1, 0, 0);
+        int api_version = VK_MAKE_VERSION(1, 2, 0);
 
         if (info.required_api_version > VK_MAKE_VERSION(1, 0, 0) ||
                 info.desired_api_version > VK_MAKE_VERSION(1, 0, 0)) {
