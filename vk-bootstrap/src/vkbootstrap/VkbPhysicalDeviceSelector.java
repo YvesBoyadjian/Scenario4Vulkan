@@ -1,5 +1,6 @@
 package vkbootstrap;
 
+import org.lwjgl.system.Struct;
 import org.lwjgl.vulkan.*;
 import port.error_code;
 
@@ -9,6 +10,8 @@ import java.util.List;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK11.VK_API_VERSION_1_1;
 import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+import static org.lwjgl.vulkan.VK12.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+import static org.lwjgl.vulkan.VK12.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 import static vkbootstrap.VkBootstrap.*;
 
 public class VkbPhysicalDeviceSelector {
@@ -27,7 +30,7 @@ public class VkbPhysicalDeviceSelector {
         public final VkPhysicalDeviceFeatures device_features = VkPhysicalDeviceFeatures.create();
         public final VkPhysicalDeviceProperties device_properties = VkPhysicalDeviceProperties.create();
         public final VkPhysicalDeviceMemoryProperties mem_properties = VkPhysicalDeviceMemoryProperties.create();
-//#if defined(VK_API_VERSION_1_1)
+        //#if defined(VK_API_VERSION_1_1)
         public final VkPhysicalDeviceFeatures2 device_features2 = VkPhysicalDeviceFeatures2.create();
         public final List<VkbGenericFeaturesPNextNode> extended_features_chain = new ArrayList<>();
 //#endif
@@ -51,7 +54,7 @@ public class VkbPhysicalDeviceSelector {
         public int desired_version = VK_MAKE_VERSION(1, 0, 0);
 
         public final VkPhysicalDeviceFeatures required_features = VkPhysicalDeviceFeatures.create();
-//#if defined(VK_API_VERSION_1_1)
+        //#if defined(VK_API_VERSION_1_1)
         public final VkPhysicalDeviceFeatures2 required_features2 = VkPhysicalDeviceFeatures2.create();
         public final List<VkbGenericFeaturesPNextNode> extended_features_chain = new ArrayList<>();
 //#endif
@@ -69,8 +72,8 @@ public class VkbPhysicalDeviceSelector {
     private final SelectionCriteria criteria = new SelectionCriteria();
 
     /*987*/ PhysicalDeviceDesc populate_device_details(int instance_version,
-                                                                                               VkPhysicalDevice phys_device,
-                                                                                               List<VkbGenericFeaturesPNextNode> src_extended_features_chain) {
+                                                       VkPhysicalDevice phys_device,
+                                                       List<VkbGenericFeaturesPNextNode> src_extended_features_chain) {
         final VkbPhysicalDeviceSelector.PhysicalDeviceDesc desc = new PhysicalDeviceDesc();
         desc.phys_device = phys_device;
         var queue_families = VkBootstrap.get_vector_noerror/*<VkQueueFamilyProperties>*/(
@@ -122,14 +125,14 @@ public class VkbPhysicalDeviceSelector {
                 VK_QUEUE_COMPUTE_BIT) != QUEUE_INDEX_MAX_VALUE;
         boolean separate_compute =
                 VkBootstrap.get_separate_queue_index(pd.queue_families, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT) !=
-        QUEUE_INDEX_MAX_VALUE;
+                        QUEUE_INDEX_MAX_VALUE;
         boolean separate_transfer =
                 VkBootstrap.get_separate_queue_index(pd.queue_families, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT) !=
-        QUEUE_INDEX_MAX_VALUE;
+                        QUEUE_INDEX_MAX_VALUE;
 
         boolean present_queue =
                 VkBootstrap.get_present_queue_index(pd.phys_device, instance_info.surface, pd.queue_families) !=
-        QUEUE_INDEX_MAX_VALUE;
+                        QUEUE_INDEX_MAX_VALUE;
 
         if (criteria.require_dedicated_compute_queue && !dedicated_compute) return Suitable.no;
         if (criteria.require_dedicated_transfer_queue && !dedicated_transfer) return Suitable.no;
@@ -156,11 +159,11 @@ public class VkbPhysicalDeviceSelector {
             final List</*VkPresentModeKHR*/Integer> present_modes = new ArrayList<>();
 
             var formats_ret = VkBootstrap.get_vector/*<VkSurfaceFormatKHR>*/(formats,
-            vulkan_functions().fp_vkGetPhysicalDeviceSurfaceFormatsKHR,
+                    vulkan_functions().fp_vkGetPhysicalDeviceSurfaceFormatsKHR,
                     pd.phys_device,
                     instance_info.surface);
             var present_modes_ret = VkBootstrap.get_vector/*<VkPresentModeKHR>*/(present_modes,
-            vulkan_functions().fp_vkGetPhysicalDeviceSurfacePresentModesKHR,
+                    vulkan_functions().fp_vkGetPhysicalDeviceSurfacePresentModesKHR,
                     pd.phys_device,
                     instance_info.surface);
 
@@ -185,9 +188,8 @@ public class VkbPhysicalDeviceSelector {
         boolean has_preferred_memory = false;
         final int memoryHeapCount = pd.mem_properties.memoryHeapCount();
         for (int i = 0; i < memoryHeapCount; i++) {
-            VkMemoryHeap memoryHeap = pd.mem_properties.memoryHeaps(i);
-            final long memoryHeapSize = memoryHeap.size();
-            if ((memoryHeap.flags() & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)!=0) {
+            if ((pd.mem_properties.memoryHeaps(i).flags() & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)!=0) {
+                final long memoryHeapSize = pd.mem_properties.memoryHeaps(i).size();
                 if (memoryHeapSize > criteria.required_mem_size) {
                     has_required_memory = true;
                 }
@@ -228,7 +230,7 @@ public class VkbPhysicalDeviceSelector {
         final List<VkPhysicalDevice> physical_devices = new ArrayList<>();
 
         int physical_devices_ret = VkBootstrap.get_vector/*<VkPhysicalDevice,VkbVulkanFunctions.PFN_vkEnumeratePhysicalDevices>*/(
-        physical_devices, vulkan_functions().fp_vkEnumeratePhysicalDevices, instance_info.instance);
+                physical_devices, vulkan_functions().fp_vkEnumeratePhysicalDevices, instance_info.instance);
         if (physical_devices_ret != VK_SUCCESS) {
             return new Result<VkbPhysicalDevice>( new error_code(VkbPhysicalDeviceError.failed_enumerate_physical_devices.ordinal()),
                     physical_devices_ret );
@@ -259,7 +261,7 @@ public class VkbPhysicalDeviceSelector {
             }
         }
 
-        if (selected_device.phys_device.address() == VK_NULL_HANDLE) {
+        if (selected_device.phys_device == null || selected_device.phys_device.address() == VK_NULL_HANDLE) {
             return new Result<VkbPhysicalDevice>(new error_code( VkbPhysicalDeviceError.no_suitable_device.ordinal() ));
         }
         final VkbPhysicalDevice out_device = new VkbPhysicalDevice();
@@ -281,6 +283,33 @@ public class VkbPhysicalDeviceSelector {
     }
     /*1212*/ public VkbPhysicalDeviceSelector set_minimum_version (int major, int minor) {
         criteria.required_version = VK_MAKE_VERSION (major, minor, 0);
+        return this;
+    }
+
+    // Require a physical device which supports the features in VkPhysicalDeviceFeatures.
+//#if defined(VKB_VK_API_VERSION_1_2)
+// Just calls add_required_features
+// Require a physical device which supports the features in VkPhysicalDeviceVulkan11Features.
+// Must have vulkan version 1.2 - This is due to the VkPhysicalDeviceVulkan11Features struct being added in 1.2, not 1.1
+    public VkbPhysicalDeviceSelector set_required_features_11(VkPhysicalDeviceVulkan11Features features_11) {
+        features_11.sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES);
+        add_required_extension_features(features_11);
+        return this;
+    }
+    // Require a physical device which supports the features in VkPhysicalDeviceVulkan12Features.
+    // Must have vulkan version 1.2
+    public VkbPhysicalDeviceSelector set_required_features_12(VkPhysicalDeviceVulkan12Features features_12) {
+        features_12.sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES);
+        add_required_extension_features(features_12);
+        return this;
+    }
+//#endif
+
+    // Require a physical device which supports a specific set of general/extension features.
+    // If this function is used, the user should not put their own VkPhysicalDeviceFeatures2 in
+    // the pNext chain of VkDeviceCreateInfo.
+    public VkbPhysicalDeviceSelector add_required_extension_features(Struct features) {
+        criteria.extended_features_chain.add(VkbGenericFeaturesPNextNode.from(features));
         return this;
     }
 }
