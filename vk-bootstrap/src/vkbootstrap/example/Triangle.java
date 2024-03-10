@@ -123,7 +123,10 @@ public class Triangle {
     public static int device_initialization(Init init) {
 
         final VkbPhysicalDeviceSelector phys_device_selector = new VkbPhysicalDeviceSelector(init.instance);
-        var phys_device_ret = phys_device_selector.set_surface (init.surface).select ();
+        var phys_device_ret = phys_device_selector.set_surface (init.surface)
+                .set_minimum_version(1, 2)
+                .set_required_features_11(VkPhysicalDeviceVulkan11Features.create())
+                .select ();
         if (phys_device_ret.not()) {
             System.out.println( phys_device_ret.error ().message () );
             return -1;
