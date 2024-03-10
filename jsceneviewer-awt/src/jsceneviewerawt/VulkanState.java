@@ -4,10 +4,7 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
 import org.lwjgl.util.vma.VmaVulkanFunctions;
 import org.lwjgl.vulkan.VkInstance;
-import vkbootstrap.example.Init;
-import vkbootstrap.example.RenderData;
-import vkbootstrap.example.Renderer;
-import vkbootstrap.example.Triangle;
+import vkbootstrap.example.*;
 import vulkanguide.VulkanEngine;
 
 import java.util.ArrayList;
@@ -22,7 +19,7 @@ public class VulkanState {
     final Init init = new Init();
     final RenderData render_data = new RenderData();
 
-    final List<Runnable> cleaners = new ArrayList<>();
+    final Cleaner cleaner = new Cleaner();
 
     public VulkanState(VulkanEngine engine) {
         render_data.setEngine(engine);
@@ -55,15 +52,11 @@ public class VulkanState {
     }
 
     public void draw_VK(Renderer renderer) {
-        Triangle.draw_frame (init, render_data,renderer);
+        Triangle.draw_frame (init, render_data, cleaner, renderer);
     }
 
     public void cleanup_VK() {
-        init.arrow_operator().vkDeviceWaitIdle.invoke (init.device.device[0]);
-
-        cleaners.forEach((r)->r.run());
-
-        Triangle.cleanup(init,render_data);
+        cleaner.cleanup_VK(init,render_data);
     }
 
     public Init getInit() {
@@ -78,7 +71,7 @@ public class VulkanState {
         return render_data.getEngine();
     }
 
-    public void addCleaner(Runnable cleaner) {
-        cleaners.add(cleaner);
+    public void addCleaner(Runnable cleanerRunnable) {
+        cleaner.addCleaner(cleanerRunnable);
     }
 }

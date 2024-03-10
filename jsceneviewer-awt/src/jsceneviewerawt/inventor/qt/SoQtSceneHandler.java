@@ -74,6 +74,7 @@ import jscenegraph.interaction.inventor.nodes.SoSelection;
 import jscenegraph.interaction.inventor.nodes.SoSelectionClassCB;
 import jsceneviewerawt.inventor.qt.SoQtGLWidget.EventType;
 import jsceneviewerawt.inventor.qt.devices.SoQtDevice;
+import vkbootstrap.example.Cleaner;
 import vkbootstrap.example.ImageData;
 import vkbootstrap.example.Init;
 import vkbootstrap.example.RenderData;
@@ -356,7 +357,7 @@ setAutoRedraw(boolean flag)
     	  actualRedraw();    	
     }
 
-    public void paintSceneVk(Init init, RenderData data, ImageData imageData) {
+    public void paintSceneVk(Init init, RenderData data, Cleaner cleaner, ImageData imageData) {
         SoState state = sceneMgr.getVkRenderAction().getState();
         if (state != null) {
             SoVkLazyElement vkLazyElement = SoVkLazyElement.getInstance(state);
@@ -366,7 +367,7 @@ setAutoRedraw(boolean flag)
 
             SoVkRenderVarsElement vkRenderVarsElement = SoVkRenderVarsElement.getInstance(state);
             if (vkRenderVarsElement != null) {
-                vkRenderVarsElement.setElt(init,data,imageData);
+                vkRenderVarsElement.setElt(init,data, cleaner, imageData);
             }
         }
 

@@ -65,10 +65,7 @@ import jscenegraph.port.GLXContext;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import org.lwjgl.vulkan.awt.VKData;
-import vkbootstrap.example.ImageData;
-import vkbootstrap.example.Init;
-import vkbootstrap.example.RenderData;
-import vkbootstrap.example.Renderer;
+import vkbootstrap.example.*;
 import vulkanguide.*;
 
 import java.awt.*;
@@ -277,7 +274,7 @@ processSoEvent(final SoEvent event)
 
 		Renderer renderer = new Renderer() {
 			@Override
-			public int render(Init init, RenderData data, ImageData imageData) {
+			public int render(Init init, RenderData data, Cleaner cleaner, ImageData imageData) {
 				VkCommandBuffer cmd = imageData.command_buffer;
 				engine.draw_objects(cmd, engine._renderables/*.data()*/, engine._renderables.size());
 				engine._frameNumber++;
@@ -287,7 +284,7 @@ processSoEvent(final SoEvent event)
 
 		renderer = new Renderer() {
 			@Override
-			public int render(Init init, RenderData data, ImageData imageData) {
+			public int render(Init init, RenderData data, Cleaner cleaner, ImageData imageData) {
 
 				init.arrow_operator().vkCmdBindPipeline.invoke (imageData.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, /*data.graphics_pipeline[0]*/vkState.getEngine()._materials.get("defaultmesh").pipeline);
 
@@ -313,7 +310,7 @@ processSoEvent(final SoEvent event)
 						null
 				);
 
-				soQtSceneHandler.paintSceneVk(init,data,imageData);
+				soQtSceneHandler.paintSceneVk(init,data, cleaner, imageData);
 				return 0;
 			}
 		};

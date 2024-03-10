@@ -143,7 +143,12 @@ public class VkBuffer implements Destroyable {
 
         long allocator = SoVkRenderVarsElement.getInit(state).allocator;
 
-        vmaDestroyBuffer(allocator,vertexBuffer._buffer[0],vertexBuffer._allocation);
+        SoVkRenderVarsElement.getCleaner(state).addCleaner(new Runnable() {
+            @Override
+            public void run() {
+                vmaDestroyBuffer(allocator,vertexBuffer._buffer[0],vertexBuffer._allocation);
+            }
+        });
 
     }
 }

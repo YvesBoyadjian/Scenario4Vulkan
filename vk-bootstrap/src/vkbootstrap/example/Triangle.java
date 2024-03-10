@@ -60,7 +60,7 @@ public class Triangle {
 
         while (!glfwWindowShouldClose (init.window)) {
             glfwPollEvents ();
-            int res = draw_frame (init, render_data, renderer);
+            int res = draw_frame (init, render_data, new Cleaner(), renderer);
             if (res != 0) {
                 System.out.println( "failed to draw frame ");
                 return;
@@ -569,7 +569,7 @@ public class Triangle {
         return 0;
     }
 
-    static int begin_end_command_buffer(final Init init, final RenderData data, ImageData imageData,Renderer renderer) {
+    static int begin_end_command_buffer(final Init init, final RenderData data, final Cleaner cleaner, ImageData imageData,Renderer renderer) {
 
             final VkCommandBufferBeginInfo begin_info = VkCommandBufferBeginInfo.create();
             begin_info.sType( VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
@@ -629,7 +629,7 @@ public class Triangle {
             init.arrow_operator().vkCmdBeginRenderPass.invoke (imageData.command_buffer, render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
             try {
-                renderer.render(init, data, imageData);
+                renderer.render(init, data, cleaner, imageData);
             } catch (RuntimeException e) {
                 e.printStackTrace();
             }
@@ -645,7 +645,7 @@ public class Triangle {
 
     public static Renderer renderer = new Renderer() {
         @Override
-        public int render(Init init, RenderData data, ImageData imageData) {
+        public int render(Init init, RenderData data, Cleaner cleaner, ImageData imageData) {
 
             init.arrow_operator().vkCmdBindPipeline.invoke (imageData.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, data.graphics_pipeline[0]);
 
@@ -697,7 +697,7 @@ public class Triangle {
         return 0;
     }
 
-    public static int draw_frame(final Init init, final RenderData data, final Renderer renderer) {
+    public static int draw_frame(final Init init, final RenderData data, final Cleaner cleaner, final Renderer renderer) {
         init.arrow_operator().vkWaitForFences.invoke (init.device.device[0], /*1,*/ data.in_flight_fences.get((int)data.current_frame), VK_TRUE != 0, Port.UINT64_MAX);
 
         final int[] image_index = new int[1];
@@ -745,7 +745,7 @@ public class Triangle {
 
         vkResetCommandBuffer(imageData.command_buffer,0);
 
-        begin_end_command_buffer(init,data,imageData,renderer);
+        begin_end_command_buffer(init,data,cleaner,imageData,renderer);
 
         //__________________________________________________________________________________________________ Submit Queue
         if (init.arrow_operator().vkQueueSubmit.invoke (data.graphics_queue, /*1,*/ submitInfo, data.in_flight_fences.get((int)data.current_frame)[0]) != VK_SUCCESS) {
