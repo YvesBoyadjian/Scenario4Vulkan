@@ -374,7 +374,7 @@ processSoEvent(final SoEvent event)
 
 		engine.load_images();
 
-		engine.load_meshes();
+		//engine.load_meshes();
 
 		engine.init_scene();
 
