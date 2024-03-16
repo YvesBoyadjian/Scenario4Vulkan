@@ -57,13 +57,7 @@ package jscenegraph.database.inventor.nodes;
 import jscenegraph.database.inventor.SbMatrix;
 import jscenegraph.database.inventor.SbVec3f;
 import jscenegraph.database.inventor.SoType;
-import jscenegraph.database.inventor.actions.SoAction;
-import jscenegraph.database.inventor.actions.SoCallbackAction;
-import jscenegraph.database.inventor.actions.SoGLRenderAction;
-import jscenegraph.database.inventor.actions.SoGetBoundingBoxAction;
-import jscenegraph.database.inventor.actions.SoGetMatrixAction;
-import jscenegraph.database.inventor.actions.SoGetPrimitiveCountAction;
-import jscenegraph.database.inventor.actions.SoPickAction;
+import jscenegraph.database.inventor.actions.*;
 import jscenegraph.database.inventor.elements.SoModelMatrixElement;
 import jscenegraph.database.inventor.fields.SoFieldData;
 import jscenegraph.database.inventor.fields.SoSFVec3f;
@@ -215,6 +209,11 @@ public void GLRender(SoGLRenderAction action)
 {
     SoTranslation_doAction(action);
 }
+
+    public void
+    VkRender(SoVkRenderAction action) {
+        SoTranslation_doAction(action);
+    }
 
 ////////////////////////////////////////////////////////////////////////
 //
