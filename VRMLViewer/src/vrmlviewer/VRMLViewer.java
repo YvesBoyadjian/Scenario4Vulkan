@@ -117,6 +117,10 @@ public static void main(String[] args) {
 
     //cache.addChild(text);
     cache.addChild(new SoCube());
+    SoTranslation transl = new SoTranslation();
+    transl.translation.setValue(2,2,2);
+    cache.addChild(transl);
+    cache.addChild(new SoCube());
 
     SwingUtilities.invokeLater(() -> {
         SoQtExaminerViewer examinerViewer = new SoQtExaminerViewer(
@@ -125,6 +129,7 @@ public static void main(String[] args) {
                 /*panel*/frame.getContentPane(),
                 0,
                 SoQtRenderArea.API.Vulkan
+                //SoQtRenderArea.API.OpenGL
         ) {
             public void initializeGL(GL2 gl2) {
                 super.initializeGL(gl2);
