@@ -6,7 +6,7 @@ import jscenegraph.database.inventor.misc.SoState;
 import jscenegraph.database.inventor.nodes.SoNode;
 import jscenegraph.port.Destroyable;
 
-public class SoVkRenderAction extends SoAction implements Destroyable {
+public class SoVkRenderAction extends SoRenderAction implements Destroyable {
 
     public int getNumPasses() {
         return 1;

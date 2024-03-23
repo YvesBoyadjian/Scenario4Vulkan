@@ -942,11 +942,15 @@ GLRender(SoGLRenderAction action)
         //camera view
         Matrix4f projection = new Matrix4f();
         Matrix4f view = new Matrix4f();
+        Matrix4f viewproj = new Matrix4f();
 
-        SbViewVolume viewVolume = viewVol;
+        //SbViewVolume viewVolume = viewVol;
 
         // Compute viewing and projection matrices
-        viewVolume.getMatrices(viewMat, projMat,false);
+        //viewVolume.getMatrices(viewMat, projMat,false);
+
+        viewMat.copyFrom(SoViewingMatrixElement.get(state));
+        projMat.copyFrom(SoProjectionMatrixElement.get(state));
 
         projMat.toMatrix4f(projection);
         viewMat.toMatrix4f(view);
@@ -954,7 +958,8 @@ GLRender(SoGLRenderAction action)
         final GPUCameraData camData = new GPUCameraData();
         camData.proj.set( projection);
         camData.view.set( view);
-        camData.viewproj.set( projection.mul( view));
+        projection.mul( view, viewproj);
+        camData.viewproj.set(viewproj);
 
         PointerBuffer dataCam = memAllocPointer(1);
 

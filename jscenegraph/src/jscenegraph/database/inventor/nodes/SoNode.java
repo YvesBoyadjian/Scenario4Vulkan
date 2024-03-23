@@ -1391,18 +1391,33 @@ GLRenderBelowPath(SoGLRenderAction action)
 {
     GLRender(action);
 }
+	public void
+	VkRenderBelowPath(SoVkRenderAction action)
+	{
+		VkRender(action);
+	}
 
 public void
 GLRenderInPath(SoGLRenderAction action)
 {
     GLRender(action);
 }
+	public void
+	VkRenderInPath(SoVkRenderAction action)
+	{
+		VkRender(action);
+	}
 
 public void
 GLRenderOffPath(SoGLRenderAction action)
 {
     GLRender(action);
 }
+	public void
+	VkRenderOffPath(SoVkRenderAction action)
+	{
+		VkRender(action);
+	}
 
 
 

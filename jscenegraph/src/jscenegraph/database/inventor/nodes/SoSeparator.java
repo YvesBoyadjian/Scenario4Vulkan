@@ -933,6 +933,22 @@ GLRender(SoGLRenderAction action)
   }
 }
 
+    public void
+    VkRender(SoVkRenderAction action)
+    {
+        switch (action.getCurPathCode()) {
+            case NO_PATH:
+            case BELOW_PATH:
+                this.VkRenderBelowPath(action);
+                break;
+            case OFF_PATH:
+                // do nothing. Separator will reset state.
+                break;
+            case IN_PATH:
+                this.VkRenderInPath(action);
+                break;
+        }
+    }
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -1075,6 +1091,126 @@ GLRenderBelowPath(SoGLRenderAction action)
                 SoGLCacheContextElement.AutoCache.DONT_AUTO_CACHE.getValue());
     }
 }
+    public void
+    VkRenderBelowPath(SoVkRenderAction action)
+
+////////////////////////////////////////////////////////////////////////
+    {
+        SoState state = action.getState();
+
+        // Do a cull test, if culling is turned on:
+        int savedCullBits = -1;
+
+        // For now, just do culling if turned ON explicitly.  Eventually,
+        // we might want to change this to:
+        //  (cullFlag == AUTO && !state.isCacheOpen()) || (cullFlag == ON)
+        boolean doCullTest = (renderCulling.getValue() == CacheEnabled.ON.getValue());
+
+        // disable culling for now
+//        if (doCullTest) {
+//            final int[] cullBits = new int[1];
+//            cullBits[0] = savedCullBits = action.getCullTestResults();
+//
+//            if (cullBits[0] != 0) {
+////#ifdef DEBUG
+////            static int printCullInfo = -1;
+////            if (printCullInfo == -1)
+////                printCullInfo =
+////                    SoDebug::GetEnv("IV_DEBUG_RENDER_CULL") != NULL;
+////            if (printCullInfo) {
+////                if (getName().getLength() != 0)
+////                    SoDebug::RTPrintf("Separator named %s",
+////                                      getName().getString());
+////                else
+////                    SoDebug::RTPrintf("Separator 0x%x", this);
+////            }
+////#endif
+//                if (cullTest(action, cullBits)) {
+////#ifdef DEBUG
+////                if (printCullInfo)
+////                    SoDebug::RTPrintf("  render culled\n");
+////#endif
+//                    // Don't cache above if doing culling:
+//                    SoVkCacheContextElement.shouldAutoCache(state,
+//                            SoVkCacheContextElement.AutoCache.DONT_AUTO_CACHE.getValue());
+//                    return;
+//                }
+////#ifdef DEBUG
+////            if (printCullInfo)
+////                printf(" render cull results: %c%c%c\n",
+////                       cullBits&1 ? 'S' : 'i',
+////                       cullBits&2 ? 'S' : 'i',
+////                       cullBits&4 ? 'S' : 'i');
+////#endif
+//                action.setCullTestResults(cullBits[0]);
+//            }
+//        }
+
+        boolean canCallCache = (renderCaching.getValue() != CacheEnabled.OFF.getValue());
+        boolean canBuildCache = (canCallCache  && ! state.isCacheOpen());
+
+        state.push();
+
+        // if we can't call a cache:
+//        if (canCallCache && cacheList.call(action)) { disable cache for now
+//            // Just pop the state
+//            state.pop();
+//        } else {
+//            if (canBuildCache) { disable cache for now
+//                // Let the cacheList open a new cache, if it can.  This
+//                // HAS to come after push() so that the cache element can
+//                // be set correctly.
+//                cacheList.open(action, renderCaching.getValue() == CacheEnabled.AUTO.getValue());
+//            }
+
+            int n = this.children.getLength();
+            Object[] childarray = (n!=0)? this.children.getArrayPtr() : null;
+            action.pushCurPath();
+            final int numKids = children.getLength();
+            for (int i = 0; i < numKids && !action.hasTerminated(); i++) {
+                action.popPushCurPath(i, (SoNode)childarray[i]);
+                if (! action.abortNow())
+                    ((SoNode )children.get(i)).VkRenderBelowPath(action);
+                else
+                    SoCacheElement.invalidate(action.getState());
+
+//#if COIN_DEBUG
+                // The GL error test is default disabled for this optimized
+                // path.  If you get a GL error reporting an error in the
+                // Separator node, enable this code by setting the environment
+                // variable COIN_GLERROR_DEBUGGING to "1" to see exactly which
+                // node caused the error.
+                if (chkglerr) {
+                    final String[] str = new String[1];
+                    int errs = Gl.coin_catch_gl_errors(str);
+                    if (errs > 0) {
+                        SoDebugError.post("SoSeparator::GLRenderBelowPath",
+                                "GL error: '"+str[0]+"', nodetype: "+(this.children).operator_square_bracket(i).getTypeId().getName().getString());
+                    }
+                    //cc_string_clean(&str);
+                }
+//#endif // COIN_DEBUG
+
+            }
+            action.popCurPath();
+            state.pop();
+//            if (canBuildCache) { disable cache for now
+//                // Let the cacheList close the cache, if it decided to
+//                // open one.  This HAS to come after the pop() so that any
+//                // GL commands executed by pop() are part of the display
+//                // list.
+//                cacheList.close(action);
+//            }
+//        }
+        // Reset cull bits, if did a cull test:
+        if (doCullTest) {
+            action.setCullTestResults(savedCullBits);
+
+            // Don't cache above if doing culling:
+            SoGLCacheContextElement.shouldAutoCache(state,
+                    SoGLCacheContextElement.AutoCache.DONT_AUTO_CACHE.getValue());
+        }
+    }
 
 ////////////////////////////////////////////////////////////////////////
 //
@@ -1176,6 +1312,56 @@ GLRenderInPath(SoGLRenderAction action)
     this.GLRenderBelowPath(action);
   }
 }
+    public void
+    VkRenderInPath(SoVkRenderAction action)
+    {
+        final int[] numindices = new int[1];
+        final int[][] indices = new int[1][];
+
+        SoAction.PathCode pathcode = action.getPathCode(numindices, indices);
+
+        if (pathcode == SoAction.PathCode.IN_PATH) {
+            SoState state = action.getState();
+            Object[] childarray = (Object[]) this.children.getArrayPtr();
+            state.push();
+            int childidx = 0;
+            for (int i = 0; i < numindices[0]; i++) {
+                for (; childidx < indices[0][i] && !action.hasTerminated(); childidx++) {
+                    SoNode offpath = (SoNode)childarray[childidx];
+                    if (offpath.affectsState()) {
+                        action.pushCurPath(childidx, offpath);
+                        if (!action.abortNow()) {
+                            final SoNodeProfiling profiling = new SoNodeProfiling();
+                            profiling.preTraversal(action);
+                            offpath.VkRenderOffPath(action); // traversal call
+                            profiling.postTraversal(action);
+                        }
+                        else {
+                            SoCacheElement.invalidate(state);
+                        }
+                        action.popCurPath(pathcode);
+                    }
+                }
+                SoNode inpath = (SoNode)childarray[childidx];
+                action.pushCurPath(childidx, inpath);
+                if (!action.abortNow()) {
+                    final SoNodeProfiling profiling = new SoNodeProfiling();
+                    profiling.preTraversal(action);
+                    inpath.VkRenderInPath(action); // traversal call
+                    profiling.postTraversal(action);
+                }
+                else {
+                    SoCacheElement.invalidate(state);
+                }
+                action.popCurPath(pathcode);
+                childidx++;
+            }
+            state.pop();
+        }
+        else if (pathcode == SoAction.PathCode.BELOW_PATH) {
+            this.VkRenderBelowPath(action);
+        }
+    }
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -1243,7 +1429,7 @@ GLRenderOffPath(SoGLRenderAction action)
 
     
 public boolean
-cullTest(SoGLRenderAction action, final int[] cullBits)
+cullTest(SoRenderAction action, final int[] cullBits)
 //
 ////////////////////////////////////////////////////////////////////////
 {

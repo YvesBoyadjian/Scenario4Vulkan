@@ -127,7 +127,7 @@ SoSeparator, SoQtRenderArea
  * @author Yves Boyadjian
  *
  */
-public class SoGLRenderAction extends SoAction implements Destroyable {
+public class SoGLRenderAction extends SoRenderAction implements Destroyable {
 
 	@Override
 	public SoType getTypeId() {
@@ -234,10 +234,6 @@ public class SoGLRenderAction extends SoAction implements Destroyable {
           };
      	  int whatChanged;
 
-       //! Keep track of which planes we need to view-volume cull test
-       //! against:
-       int                 cullBits;
-
      ////////////////////////////////////////////////////////////////////////
      //
      // Description:
@@ -257,10 +253,6 @@ public class SoGLRenderAction extends SoAction implements Destroyable {
          pimpl.transparencytype          = TransparencyType./*SCREEN_DOOR*/BLEND;
 
         whatChanged         = flags.ALL.getValue();
-
-        // These three bits keep track of which view-volume planes we need
-        // to test against; by default, all bits are 1.
-        cullBits            = 7;
 
         pimpl.action = this;
         
@@ -1146,9 +1138,6 @@ endTraversal(SoNode node)
         {
     	  return pimpl.delayedpathrender;
     	}
-
-    public int                 getCullTestResults() { return cullBits; }
-    public void                setCullTestResults(int b) { cullBits = b; }
 
 	/*
 	 * !
