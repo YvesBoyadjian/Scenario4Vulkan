@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Lwjgl3-awt
+Bundle-SymbolicName: lwjgl3-awt
+Bundle-Version: 1.0.0.qualifier
+Automatic-Module-Name: lwjgl3-awt
+Require-Bundle: vk-bootstrap;bundle-version="1.0.0"

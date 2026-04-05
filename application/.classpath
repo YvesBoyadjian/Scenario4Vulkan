@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-21">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
@@ -12,11 +12,11 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/lwjgl3-swt"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/jsceneviewer-glfw"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/lwjgl-utils"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/lwjgl-glfw"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/geotools"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/gdx"/>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ode4j"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/sl4j"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/vk-bootstrap"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

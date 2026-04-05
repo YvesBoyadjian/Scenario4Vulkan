@@ -74,39 +74,42 @@ public class SoVkShaderProgram implements Destroyable {
             RenderData rd = SoVkRenderVarsElement.getRenderData(state);
             VulkanEngine ve = rd.getEngine();
 
-            PointerBuffer objectData = memAllocPointer(1);
-            vmaMapMemory(ve._allocator, ve.get_current_frame().objectBuffer._allocation, objectData);
-
-            /*GPUObjectData*/long objectSSBO = objectData.get(0);
-
-            int count = ve._renderables.size();
+//            PointerBuffer objectData = memAllocPointer(1);
+//            vmaMapMemory(ve._allocator, ve.get_current_frame().objectBuffer._allocation, objectData);
+//
+//            /*GPUObjectData*/long objectSSBO = objectData.get(0);
+//
+//            int count = ve._renderables.size();
             List<RenderObject> first = ve._renderables;
+//
+//            SbMatrix modelm = SoModelMatrixElement.get(state);
+//            Matrix4f model = new Matrix4f();//object.transformMatrix;
+//            modelm.toMatrix4f(model);
+//
+//            for (int i = 0; i < count; i++)
+//            {
+//                RenderObject object = first.get(i);
+//                GPUObjectData.setModelMatrix(objectSSBO + i* GPUObjectData.sizeof(), model);
+//            }
+//
+//            vmaUnmapMemory(ve._allocator, ve.get_current_frame().objectBuffer._allocation);
+//
+//            memFree(objectData);
 
             SbMatrix modelm = SoModelMatrixElement.get(state);
             Matrix4f model = new Matrix4f();//object.transformMatrix;
             modelm.toMatrix4f(model);
-
-            for (int i = 0; i < count; i++)
-            {
-                RenderObject object = first.get(i);
-                GPUObjectData.setModelMatrix(objectSSBO + i* GPUObjectData.sizeof(), model);
-            }
-
-            vmaUnmapMemory(ve._allocator, ve.get_current_frame().objectBuffer._allocation);
-
-            memFree(objectData);
-
-            //SbMatrix modelm = SoModelMatrixElement.get(state);
-            //Matrix4f model = new Matrix4f();//object.transformMatrix;
-            modelm.toMatrix4f(model);
             //final render matrix, that we are calculating on the cpu
             Matrix4f mesh_matrix = model;
 
+            for (int i = 0; i < 1/*count*/; i++)
+            {
+            
             final MeshPushConstants constants = new MeshPushConstants();
             constants.render_matrix.set( mesh_matrix);
 
             //List<RenderObject> first = ve._renderables;
-            RenderObject object = first.get(0);
+            RenderObject object = first.get(i);
 
             ImageData imageData = SoVkRenderVarsElement.getImageData(state);
             VkCommandBuffer cmd = imageData.command_buffer;
@@ -114,7 +117,7 @@ public class SoVkShaderProgram implements Destroyable {
             //upload the mesh to the gpu via pushconstants
             VK10.vkCmdPushConstants(cmd, object.material.pipelineLayout/*rd.pipeline_layout[0]*/, VK_SHADER_STAGE_VERTEX_BIT, 0, /*MeshPushConstants.sizeof(),*/ constants.toFloatBuffer());
 
-
+            }
             // ________________________________________________________________________________ End Object
 //            ImageData imageData = SoVkRenderVarsElement.getImageData(state);
 //

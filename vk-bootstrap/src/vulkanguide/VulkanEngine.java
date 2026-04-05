@@ -52,9 +52,6 @@ public class VulkanEngine {
 
     public VkInstance _instance;
     public /*VkDebugUtilsMessengerEXT*/long _debug_messenger;
-
-    public VkbInstance vkb_inst;
-
     public VkPhysicalDevice _chosenGPU;
     public VkDevice _device;
 
@@ -121,7 +118,8 @@ public class VulkanEngine {
         }
     }
 
-    /*37*/ public void init() {
+    /*37*/ public void init()
+    {
         // We initialize SDL and create a window with it.
         //SDL_Init(SDL_INIT_VIDEO);
         glfwInit();
@@ -140,15 +138,7 @@ public class VulkanEngine {
         );*/
                 glfwCreateWindow(_windowExtent.width(), _windowExtent.height(), "Vulkan Engine", 0, 0);
 
-        //init_vulkan();
-        init_vulkan_instance();
-        init_window_surface();
-        init_VK();
-    }
-
-    public void init_VK() {
-
-        init_vulkan_with_surface();
+        init_vulkan();
 
         init_swapchain();
 
@@ -192,6 +182,7 @@ public class VulkanEngine {
             destroy_window_glfw (_window);
         }
     }
+    
     /*77*/public void cleanup_light()
     {
         if (_isInitialized) {
@@ -288,8 +279,6 @@ public class VulkanEngine {
         rpInfo.pClearValues ( clearValues);
 
         vkCmdBeginRenderPass(cmd, rpInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-
 
         draw_objects(cmd, _renderables/*.data()*/, _renderables.size());
 
@@ -399,13 +388,13 @@ public class VulkanEngine {
         }
     }
 
-    /*219*/
-    public FrameData get_current_frame()
+    /*219*/public FrameData get_current_frame()
     {
         return _frames[_frameNumber % FRAME_OVERLAP];
     }
 
-    public void init_vulkan_instance() {
+    /*230*/ public void init_vulkan()
+    {
         final VkbInstanceBuilder builder = new VkbInstanceBuilder();
 
         //make the vulkan instance, with basic debug features
@@ -415,33 +404,21 @@ public class VulkanEngine {
                 .require_api_version(1, 2, 0)
                 .build();
 
-        vkb_inst = inst_ret.value();
+        VkbInstance vkb_inst = inst_ret.value();
 
         //grab the instance
         _instance = vkb_inst.instance[0];
         _debug_messenger = vkb_inst.debug_messenger[0];
-    }
 
-    public void init_window_surface() {
         //SDL_Vulkan_CreateSurface(_window, _instance, &_surface);
         glfwCreateWindowSurface(_instance, _window, /*allocator*/null, _surface);
-    }
-
-    /*230*/ public void init_vulkan() {
-        init_vulkan_instance();
-        init_window_surface();
-
-        init_vulkan_with_surface();
-    }
-
-    public void init_vulkan_with_surface() {
 
         //use vkbootstrap to select a gpu.
         //We want a gpu that can write to the SDL surface and supports vulkan 1.2
         final VkbPhysicalDeviceSelector selector = new VkbPhysicalDeviceSelector( vkb_inst );
         final VkbPhysicalDevice physicalDevice = selector
-            .set_minimum_version(1, 2)
-            .set_required_features_11(VkPhysicalDeviceVulkan11Features.create())
+            .set_minimum_version(1, 2)            
+//           .set_required_features_11(VkPhysicalDeviceVulkan11Features.create().set(0, 0, false, false, false, false, false, false, false, false, false, false, false, true))
             .set_surface(_surface[0])
             .select()
             .value();
@@ -461,15 +438,6 @@ public class VulkanEngine {
 
         _graphicsQueueFamily = vkbDevice.get_queue_index(VkbQueueType.graphics).value();
 
-        init_allocator();
-
-        vkGetPhysicalDeviceProperties(_chosenGPU, _gpuProperties);
-
-        System.out.println( "The gpu has a minimum buffer alignement of " + _gpuProperties.limits().minUniformBufferOffsetAlignment() );
-
-    }
-
-    public void init_allocator() {
         //initialize the memory allocator
         VmaAllocatorCreateInfo allocatorInfo = VmaAllocatorCreateInfo.create();
         allocatorInfo.physicalDevice( _chosenGPU );
@@ -486,21 +454,26 @@ public class VulkanEngine {
         memFree(pb);
 
         _mainDeletionQueue.push_function(() -> {
-            vmaDestroyAllocator(_allocator);
-        });
+        vmaDestroyAllocator(_allocator);
+    });
+
+        vkGetPhysicalDeviceProperties(_chosenGPU, _gpuProperties);
+
+        System.out.println( "The gpu has a minimum buffer alignement of " + _gpuProperties.limits().minUniformBufferOffsetAlignment() );
 
     }
 
-    /*290*/ public void init_swapchain() {
-        final VkbSwapchainBuilder swapchainBuilder = new VkbSwapchainBuilder(_chosenGPU, _device, _surface[0]);
+    /*290*/ public void init_swapchain()
+    {
+        final VkbSwapchainBuilder swapchainBuilder = new VkbSwapchainBuilder(_chosenGPU,_device,_surface[0] );
 
         VkbSwapchain vkbSwapchain = swapchainBuilder
-                .use_default_format_selection()
-                //use vsync present mode
-                .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
-                .set_desired_extent(_windowExtent.width(), _windowExtent.height())
-                .build()
-                .value();
+            .use_default_format_selection()
+            //use vsync present mode
+            .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
+            .set_desired_extent(_windowExtent.width(), _windowExtent.height())
+            .build()
+            .value();
 
         //store swapchain and its related images
         _swapchain = vkbSwapchain.swapchain[0];
@@ -749,7 +722,13 @@ public class VulkanEngine {
         {
             if (!load_shader_module("vk-bootstrap/src/vulkanguide/shaders/default_lit.frag.spv", colorMeshShader))
             {
+                if (!load_shader_module("../vk-bootstrap/src/vulkanguide/shaders/default_lit.frag.spv", colorMeshShader))
+                {
+                if (!load_shader_module("src/vulkanguide/shaders/default_lit.frag.spv", colorMeshShader))
+                {
                 System.out.println("Error when building the colored mesh shader");
+                }
+                }
             }
         }
 
@@ -757,15 +736,26 @@ public class VulkanEngine {
         if (!load_shader_module("../../shaders/textured_lit.frag.spv", texturedMeshShader))
         {
             if (!load_shader_module("vk-bootstrap/src/vulkanguide/shaders/textured_lit.frag.spv", texturedMeshShader)) {
+                if (!load_shader_module("../vk-bootstrap/src/vulkanguide/shaders/textured_lit.frag.spv", texturedMeshShader)) {
+                if (!load_shader_module("src/vulkanguide/shaders/textured_lit.frag.spv", texturedMeshShader)) {
                 System.out.println("Error when building the colored mesh shader");
+                }
+                }
             }
         }
+        
+        String shaderName = "tri_mesh_ssbo2.vert.spv";
+        //shaderName = "tri_mesh_ssbo.vert.spv";
 
         /*VkShaderModule*/final long[] meshVertShader = new long[1];
-        if (!load_shader_module("../../shaders/tri_mesh_ssbo2.vert.spv", meshVertShader))
+        if (!load_shader_module("../../shaders/"+shaderName, meshVertShader))
         {
-            if (!load_shader_module("vk-bootstrap/src/vulkanguide/shaders/tri_mesh_ssbo2.vert.spv", meshVertShader)) {
+            if (!load_shader_module("vk-bootstrap/src/vulkanguide/shaders/"+shaderName, meshVertShader)) {
+                if (!load_shader_module("../vk-bootstrap/src/vulkanguide/shaders/"+shaderName, meshVertShader)) {
+                if (!load_shader_module("src/vulkanguide/shaders/"+shaderName, meshVertShader)) {
                 System.out.println("Error when building the mesh vertex shader module");
+                }
+                }
             }
         }
 
@@ -953,8 +943,7 @@ public class VulkanEngine {
         return true;
     }
 
-    /*762*/
-    public void load_meshes()
+    /*762*/ void load_meshes()
     {
         final Mesh triMesh = new Mesh();
         //make the array 3 vertices long
@@ -995,13 +984,16 @@ public class VulkanEngine {
         _meshes.put("empire", lostEmpire);
     }
 
-    /*796*/
-    public void load_images()
+    /*796*/public void load_images()
     {
         final Texture lostEmpire = new Texture();
 
         if(!VkUtil.load_image_from_file(this, "../../assets/lost_empire-RGBA.png", lostEmpire.image)) {
-            VkUtil.load_image_from_file(this, "vk-bootstrap/src/vulkanguide/assets/lost_empire-RGBA.png", lostEmpire.image);
+            if (!VkUtil.load_image_from_file(this, "vk-bootstrap/src/vulkanguide/assets/lost_empire-RGBA.png", lostEmpire.image)) {
+                if (!VkUtil.load_image_from_file(this, "../vk-bootstrap/src/vulkanguide/assets/lost_empire-RGBA.png", lostEmpire.image)) {
+            		VkUtil.load_image_from_file(this, "src/vulkanguide/assets/lost_empire-RGBA.png", lostEmpire.image);
+                }
+            }
         }
 
         VkImageViewCreateInfo imageinfo = VkInit.imageview_create_info(VK_FORMAT_R8G8B8A8_SRGB, lostEmpire.image[0]._image, VK_IMAGE_ASPECT_COLOR_BIT);
@@ -1123,8 +1115,7 @@ public class VulkanEngine {
         return _meshes.get(name);
     }
 
-    /*914*/
-    public void draw_objects(VkCommandBuffer cmd, List<RenderObject> first, int count)
+    /*914*/public void draw_objects(VkCommandBuffer cmd, List<RenderObject> first, int count)
     {
         //make a model view matrix for rendering the object
         //camera view
@@ -1245,8 +1236,7 @@ public class VulkanEngine {
         return alignedSize;
     }
 
-    /*1017*/
-    public void init_scene()
+    /*1017*/public void init_scene()
     {
         final RenderObject monkey = new RenderObject();
         monkey.mesh = get_mesh("monkey");
@@ -1359,11 +1349,11 @@ public class VulkanEngine {
         final VkCommandBuffer cmd;
 
         //allocate the default command buffer that we will use for rendering
-        VkCommandBufferAllocateInfo cmdAllocInfo = VkInit.command_buffer_allocate_info(pool, 1);
+        VkCommandBufferAllocateInfo cmdAllocInfo = VkInit.command_buffer_allocate_info(/*_uploadContext._commandPool[0]*/pool, 1);
 
         PointerBuffer dummy1 = memAllocPointer(1);
-        VK_CHECK(vkAllocateCommandBuffers(device, cmdAllocInfo, /*cmd*/dummy1));
-        cmd = new VkCommandBuffer(dummy1.get(0),device);
+        VK_CHECK(vkAllocateCommandBuffers(/*_device*/device, cmdAllocInfo, /*cmd*/dummy1));
+        cmd = new VkCommandBuffer(dummy1.get(0),/*_device*/device);
 
         memFree(dummy1);
 
@@ -1383,12 +1373,12 @@ public class VulkanEngine {
 
         //submit command buffer to the queue and execute it.
         // _renderFence will now block until the graphic commands finish execution
-        VK_CHECK(vkQueueSubmit(queue, /*1,*/ submit, fence[0]));
+        VK_CHECK(vkQueueSubmit(/*_graphicsQueue*/queue, /*1,*/ submit, /*_uploadContext._uploadFence*/fence[0]));
 
-        VK10.vkWaitForFences(device, /*1,*/ fence, true, 9999999999l);
-        VK10.vkResetFences(device, /*1,*/ fence[0]);
+        VK10.vkWaitForFences(/*_device*/device, /*1,*/ /*_uploadContext._uploadFence*/fence, true, 9999999999l);
+        VK10.vkResetFences(/*_device*/device, /*1,*/ /*_uploadContext._uploadFence*/fence[0]);
 
-        vkResetCommandPool(device, pool, 0);
+        vkResetCommandPool(/*_device*/device, /*_uploadContext._commandPool[0]*/pool, 0);
     }
 
     /*1149*/ public void init_descriptors()

@@ -3,6 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Application-swt
 Bundle-SymbolicName: application-swt
 Bundle-Version: 1.0.0.qualifier
+Export-Package: application.swt
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  loader;bundle-version="1.0.0",
@@ -12,9 +13,10 @@ Require-Bundle: org.eclipse.ui,
  lwjgl3-swt,
  jsceneviewer-glfw;bundle-version="1.0.0",
  lwjgl-utils,
- lwjgl-glfw,
  geotools;bundle-version="1.0.0",
- gdx;bundle-version="1.0.0"
+ gdx;bundle-version="1.0.0",
+ vk-bootstrap;bundle-version="1.0.0",
+ org.eclipse.e4.ui.workbench.swt;bundle-version="0.18.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Automatic-Module-Name: application
 Bundle-ActivationPolicy: lazy

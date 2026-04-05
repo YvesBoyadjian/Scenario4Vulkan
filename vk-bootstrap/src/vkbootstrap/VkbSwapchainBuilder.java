@@ -7,6 +7,7 @@ import port.error_code;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -23,9 +24,12 @@ public class VkbSwapchainBuilder {
         public /*VkSwapchainCreateFlagBitsKHR*/int create_flags = (/*VkSwapchainCreateFlagBitsKHR*/int)(0);
         public /*VkSurfaceKHR*/ long surface = VK_NULL_HANDLE;
         public final List<VkSurfaceFormatKHR> desired_formats = new ArrayList<>();
+        public int instance_version = Version.VKB_VK_API_VERSION_1_0;
         public int desired_width = 256;
         public int desired_height = 256;
         public int array_layer_count = 1;
+        public int min_image_count = 0;
+        public int required_min_image_count = 0;
         public /*VkImageUsageFlags*/int image_usage_flags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         public /*VkFormatFeatureFlags*/int format_feature_flags = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
         public int graphics_queue_index = 0;
@@ -86,13 +90,29 @@ public class VkbSwapchainBuilder {
             return new Result(new Error( new error_code(VkbSwapchainError.failed_query_surface_support_details.ordinal()),
                 surface_support_ret.vk_result() ));
         var surface_support = surface_support_ret.value();
+        
+        int image_count = info.min_image_count;
+        if (info.required_min_image_count >= 1) {
+            if (info.required_min_image_count < surface_support.capabilities.minImageCount())
+                return new Result(VkBootstrap.make_error_code(VkbSwapchainError.required_min_image_count_too_low));
 
-        int image_count = surface_support.capabilities.minImageCount() + 1;
+            image_count = info.required_min_image_count;
+        } else if (info.min_image_count == 0) {
+            // We intentionally use minImageCount + 1 to maintain existing behavior, even if it typically results in triple buffering on most systems.
+            image_count = surface_support.capabilities.minImageCount() + 1;
+        } else {
+            image_count = info.min_image_count;
+            if (image_count < surface_support.capabilities.minImageCount())
+                image_count = surface_support.capabilities.minImageCount();
+        }
         if (surface_support.capabilities.maxImageCount() > 0 && image_count > surface_support.capabilities.maxImageCount()) {
             image_count = surface_support.capabilities.maxImageCount();
-        }
-        VkSurfaceFormatKHR surface_format = VkBootstrap.find_surface_format(
-                info.physical_device, surface_support.formats, desired_formats, info.format_feature_flags);
+        }               
+
+        VkSurfaceFormatKHR surface_format = VkBootstrap.find_best_surface_format(surface_support.formats, desired_formats);
+
+//        VkSurfaceFormatKHR surface_format = VkBootstrap.find_surface_format(
+//                info.physical_device, surface_support.formats, desired_formats, info.format_feature_flags);
 
         VkExtent2D extent =
                 VkBootstrap.find_extent(surface_support.capabilities, info.desired_width, info.desired_height);
@@ -107,7 +127,22 @@ public class VkbSwapchainBuilder {
 
         /*VkPresentModeKHR*/int present_mode =
                 VkBootstrap.find_present_mode(surface_support.present_modes, desired_present_modes);
+        
+        // VkSurfaceCapabilitiesKHR::supportedUsageFlags is only only valid for some present modes. For shared present modes, we should also check VkSharedPresentSurfaceCapabilitiesKHR::sharedPresentSupportedUsageFlags.
+        var is_unextended_present_mode = new Predicate<Integer>() {
 
+			@Override
+			public boolean test(/*VkPresentModeKHR*/Integer present_mode) {
+	            return (present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR) || (present_mode == VK_PRESENT_MODE_MAILBOX_KHR) ||
+	                    (present_mode == VK_PRESENT_MODE_FIFO_KHR) || (present_mode == VK_PRESENT_MODE_FIFO_RELAXED_KHR);
+			}        	
+        };
+        
+        if (is_unextended_present_mode.test(present_mode) &&
+            (info.image_usage_flags & surface_support.capabilities.supportedUsageFlags()) != info.image_usage_flags) {
+            return new Result<VkbSwapchain>( new error_code(VkbSwapchainError.required_usage_not_supported.ordinal()) );
+        }
+                                
         /*VkSurfaceTransformFlagBitsKHR*/int pre_transform = info.pre_transform;
         if (info.pre_transform == (/*VkSurfaceTransformFlagBitsKHR*/int)(0))
             pre_transform = surface_support.capabilities.currentTransform();
@@ -148,12 +183,23 @@ public class VkbSwapchainBuilder {
         }
         swapchain.device = info.device;
         swapchain.image_format = surface_format.format();
+        swapchain.color_space = surface_format.colorSpace();
+        swapchain.image_usage_flags = info.image_usage_flags;
         swapchain.extent.set(extent);
+        VkBootstrap.vulkan_functions().get_device_proc_addr(
+                info.device, swapchain.internal_table.fp_vkGetSwapchainImagesKHR, "vkGetSwapchainImagesKHR");
+        VkBootstrap.vulkan_functions().get_device_proc_addr(info.device, swapchain.internal_table.fp_vkCreateImageView, "vkCreateImageView");
+        VkBootstrap.vulkan_functions().get_device_proc_addr(info.device, swapchain.internal_table.fp_vkDestroyImageView, "vkDestroyImageView");
+        VkBootstrap.vulkan_functions().get_device_proc_addr(
+                info.device, swapchain.internal_table.fp_vkDestroySwapchainKHR, "vkDestroySwapchainKHR");
         var images = swapchain.get_images();
         if (images.not()) {
             return new Result(new Error( new error_code(VkbSwapchainError.failed_get_swapchain_images.ordinal() )));
         }
+        swapchain.requested_min_image_count = image_count;
+        swapchain.present_mode = present_mode;
         swapchain.image_count = (int)(images.value().size());
+        swapchain.instance_version = info.instance_version;
         swapchain.allocation_callbacks = info.allocation_callbacks;
         return new Result(swapchain);
     }
@@ -183,10 +229,6 @@ public class VkbSwapchainBuilder {
     }
 
     /*1876*/ void add_desired_formats(List<VkSurfaceFormatKHR> formats) {
-        VkSurfaceFormatKHR fmt0 = VkSurfaceFormatKHR.create();
-        Port.UNSAFE.putInt(null, fmt0.address() + VkSurfaceFormatKHR.FORMAT, VK_FORMAT_A2B10G10R10_UNORM_PACK32);
-        Port.UNSAFE.putInt(null, fmt0.address() + VkSurfaceFormatKHR.COLORSPACE, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
-        formats.add( /*{ VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR }*/fmt0);
         VkSurfaceFormatKHR fmt1 = VkSurfaceFormatKHR.create();
         Port.UNSAFE.putInt(null, fmt1.address() + VkSurfaceFormatKHR.FORMAT, VK_FORMAT_B8G8R8A8_SRGB);
         Port.UNSAFE.putInt(null, fmt1.address() + VkSurfaceFormatKHR.COLORSPACE, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);

@@ -216,13 +216,15 @@ public void updateParameter(SoGLShaderObject shader)
  */
 final SbMatrix matrix = SbMatrix.identity(); // SINGLE_THREAD
 
+final float[][]tmp = new float[4][4]; // SINGLE_THREAD
+
 public void
 updateValue(SoState state)
 {
   switch (MatrixType.fromValue(this.matrixType.getValue())) {
     case MODELVIEW: {
       matrix.copyFrom(SoModelMatrixElement.get(state));
-      matrix.multRight(SoViewingMatrixElement.get(state));
+      matrix.multRight(SoViewingMatrixElement.get(state),tmp);
     } break;
     case PROJECTION: {
       matrix.copyFrom(SoProjectionMatrixElement.get(state));
@@ -233,8 +235,8 @@ updateValue(SoState state)
     } break;
     case MODELVIEW_PROJECTION: {
       matrix.copyFrom(SoModelMatrixElement.get(state));
-      matrix.multRight(SoViewingMatrixElement.get(state));
-      matrix.multRight(SoProjectionMatrixElement.get(state));
+      matrix.multRight(SoViewingMatrixElement.get(state),tmp);
+      matrix.multRight(SoProjectionMatrixElement.get(state),tmp);
     } break;
     default: assert(false);// && "illegal matrix type"); break;
   }
@@ -244,7 +246,7 @@ updateValue(SoState state)
   case TRANSPOSE: value.copyFrom(matrix.transpose()); break;
   case INVERSE: value.copyFrom(matrix.inverse()); break;
   case INVERSE_TRANSPOSE: value.copyFrom(matrix.inverse().transpose()); break;
-      case INVERSE_TRANSPOSE_3: value.copyFrom(matrix.inverse().transpose());
+      case INVERSE_TRANSPOSE_3: value.copyFrom(matrix.inverse(value).transpose(value));
       value.getValueLinear3(valueLinear3);
       break;
   default: assert(false);// && "illegal matrix transform type"); break;

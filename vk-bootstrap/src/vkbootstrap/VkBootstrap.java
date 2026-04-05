@@ -2,6 +2,7 @@ package vkbootstrap;
 
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.NativeType;
+import org.lwjgl.system.Struct;
 import org.lwjgl.vulkan.*;
 import port.Port;
 import port.error_code;
@@ -101,7 +102,7 @@ public class VkBootstrap {
     /*218*/ public static <T extends VkExtensionProperties, F extends VkbVulkanFunctions.PFN_vkEnumerateInstanceExtensionProperties> int get_vector(final List<T> out, F f, ByteBuffer o) {
         final int[] count = new int[1];
         /*VkResult*/int err;
-        do {
+//        do {
             err = f.invoke( o, count, null);
             if (err != 0) {
                 return err;
@@ -116,16 +117,16 @@ public class VkBootstrap {
                 }
             }
 
-        } while (err == VK_INCOMPLETE);
+//        } while (err == VK_INCOMPLETE); it will never be incomplete
         return err;
     }
 
     /*218*/ public static <T extends VkLayerProperties, F extends VkbVulkanFunctions.PFN_vkEnumerateInstanceLayerProperties> int get_vector(final List<T> out, F f) {
         final int[] count = new int[1];
         /*VkResult*/int err;
-        do {
+//        do {
             err = f.invoke( count, null);
-            if (err != 0) {
+            if (err != VK_SUCCESS) {
                 return err;
             };
             //out.resize(count);
@@ -138,7 +139,7 @@ public class VkBootstrap {
                 }
             }
 
-        } while (err == VK_INCOMPLETE);
+//        } while (err == VK_INCOMPLETE); it will never be incomplete
         return err;
     }
 
@@ -218,10 +219,28 @@ public class VkBootstrap {
         return rl;
     }
 
+    public static String to_string_device_type(final /*VkPhysicalDeviceType*/int type) {
+    switch (type) {
+        case VK_PHYSICAL_DEVICE_TYPE_OTHER:
+            return "other";
+        case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+            return "integrated";
+        case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+            return "discrete";
+        case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+            return "virtual_gpu";
+        case VK_PHYSICAL_DEVICE_TYPE_CPU:
+            return "cpu";
+        default:
+            return "unknown";
+    }
+}
+
     /*270*/ /*VkResult*/public static int create_debug_utils_messenger(VkInstance instance,
                                           VkDebugUtilsMessengerCallbackEXT debug_callback,
                                           /*VkDebugUtilsMessageSeverityFlagsEXT*/int severity,
                                           /*VkDebugUtilsMessageTypeFlagsEXT*/int type,
+                                          long user_data_pointer,
                                           /*VkDebugUtilsMessengerEXT*/final long[] pDebugMessenger,
                                           VkAllocationCallbacks allocation_callbacks) {
 
@@ -232,6 +251,7 @@ public class VkBootstrap {
         messengerCreateInfo.messageSeverity( severity);
         messengerCreateInfo.messageType( type);
         messengerCreateInfo.pfnUserCallback( debug_callback);
+        messengerCreateInfo.pUserData(user_data_pointer);
 
         VkbVulkanFunctions.PFN_vkCreateDebugUtilsMessengerEXT createMessengerFunc;
         //vulkan_functions().get_inst_proc_addr(createMessengerFunc, "vkCreateDebugUtilsMessengerEXT");
@@ -294,14 +314,14 @@ public class VkBootstrap {
         return false;
     }
 
-    /*328*/ public static boolean check_layers_supported(List<VkLayerProperties> available_layers,
+    /*328*/ public static List<String>  check_layers_supported(List<VkLayerProperties> available_layers,
                                 List<String> layer_names) {
-        boolean all_found = true;
+        final List<String> not_found = new ArrayList<>();
         for (var layer_name : layer_names) {
             boolean found = check_layer_supported(available_layers, layer_name);
-            if (!found) all_found = false;
+            if (!found) not_found.add(layer_name);
         }
-        return all_found;
+        return not_found;
     }
 
     /*338*/ public static boolean check_extension_supported(
@@ -315,14 +335,14 @@ public class VkBootstrap {
         return false;
     }
 
-    /*349*/ public static boolean check_extensions_supported(final List<VkExtensionProperties> available_extensions,
+    /*349*/ public static List<String> check_extensions_supported(final List<VkExtensionProperties> available_extensions,
                                     final List<String> extension_names) {
-        boolean all_found = true;
+        final List<String> not_found = new ArrayList<>();
         for (var extension_name : extension_names) {
             boolean found = check_extension_supported(available_extensions, extension_name);
-            if (!found) all_found = false;
+            if (!found) not_found.add(extension_name);
         }
-        return all_found;
+        return not_found;
     }
 
     //template <typename T>
@@ -335,15 +355,38 @@ public class VkBootstrap {
         structure.pNext(structs.get(0).address());
     }
 
-    //template <typename T>
-    /*360 */public static <T extends VkDeviceCreateInfo> void setup_pNext_chain(T structure, final List<VkBaseOutStructure> structs) {
-        structure.pNext(0);
-        if (structs.size() <= 0) return;
-        for (int i = 0; i < structs.size() - 1; i++) {
-            structs.get(i).pNext(structs.get(i + 1));
-        }
-        structure.pNext(structs.get(0).address());
+    public static <T extends VkDeviceCreateInfo> void setup_pNext_chain(T structure, final List<Struct<?>> structs) {
+    structure.pNext(0);
+    if (structs.isEmpty()) return;
+    for (int i = 0; i < structs.size() - 1; i++) {
+        VkBaseOutStructure out_structure = VkBaseOutStructure.create();
+        Port.memcpy(out_structure, structs.get(i), VkBaseOutStructure.SIZEOF);
+//#if !defined(NDEBUG)
+//        assert(out_structure.sType != VK_STRUCTURE_TYPE_APPLICATION_INFO);
+//#endif
+        VkBaseOutStructure cast = VkBaseOutStructure.createSafe(structs.get(i + 1).address());
+        out_structure.pNext(cast);
+        Port.memcpy(structs.get(i), out_structure, VkBaseOutStructure.SIZEOF);
     }
+    VkBaseOutStructure out_structure = VkBaseOutStructure.create();
+    Port.memcpy(out_structure, structs.get(structs.size() - 1), VkBaseOutStructure.SIZEOF);
+    out_structure.pNext(null);
+//#if !defined(NDEBUG)
+//    assert(out_structure.sType != VK_STRUCTURE_TYPE_APPLICATION_INFO);
+//#endif
+    Port.memcpy(structs.get(structs.size() - 1), out_structure, VkBaseOutStructure.SIZEOF);
+    structure.pNext(structs.get(0).address());
+}
+
+    //template <typename T>
+//    /*360 */public static <T extends VkDeviceCreateInfo> void setup_pNext_chain(T structure, final List<VkBaseOutStructure> structs) {
+//        structure.pNext(0);
+//        if (structs.size() <= 0) return;
+//        for (int i = 0; i < structs.size() - 1; i++) {
+//            structs.get(i).pNext(structs.get(i + 1));
+//        }
+//        structure.pNext(structs.get(0).address());
+//    }
 
     //template <typename T>
     /*360*/ public static <T extends VkSwapchainCreateInfoKHR> void setup_pNext_chain(T structure, final List<VkBaseOutStructure> structs) {
@@ -358,10 +401,17 @@ public class VkBootstrap {
     /*368*/ public static final String validation_layer_name = "VK_LAYER_KHRONOS_validation";
 
     static final InstanceErrorCategory instance_error_category = new InstanceErrorCategory();
+    
+    static final SwapchainErrorCategory swapchain_error_category = new SwapchainErrorCategory();
 
     /*408*/ public static error_code make_error_code(VkbInstanceError instance_error) {
         return new error_code( instance_error.ordinal(), instance_error_category );
     }
+    
+    public static error_code make_error_code(VkbSwapchainError swapchain_error) {
+        return new error_code(swapchain_error.ordinal(), swapchain_error_category );
+    }
+    
 
     /*424*/ public static String to_string(VkbInstanceError err) {
         switch (err) {
@@ -387,6 +437,25 @@ public class VkBootstrap {
                 return "";
         }
     }
+
+	public static String to_string(VkbSwapchainError err) {
+		switch(err) {
+		case failed_create_swapchain:
+			return "failed_create_swapchain";
+		case failed_create_swapchain_image_views:
+			return "failed_create_swapchain_image_views";
+		case failed_get_swapchain_images:
+			return "failed_get_swapchain_images";
+		case failed_query_surface_support_details:
+			return "failed_query_surface_support_details";
+		case required_min_image_count_too_low:
+			return "required_min_image_count_too_low";
+		case surface_handle_not_provided:
+			return "required_min_image_count_too_low";
+		default:
+			return "";
+		}
+	}
 
     // Sentinel value, used in implementation only
     public static final int QUEUE_INDEX_MAX_VALUE = 65536;
@@ -504,7 +573,7 @@ public class VkBootstrap {
     // Finds the first queue which supports the desired operations. Returns QUEUE_INDEX_MAX_VALUE if none is found
     /*931*/ public static int get_first_queue_index(final List<VkQueueFamilyProperties> families, /*VkQueueFlags*/int desired_flags) {
         for (int i = 0; i < (int)(families.size()); i++) {
-            if ((families.get(i).queueFlags() & desired_flags) == desired_flags) return i;
+            if ((families.get(i).queueFlags() & desired_flags) != 0) return i;
         }
         return QUEUE_INDEX_MAX_VALUE;
     }
@@ -517,9 +586,8 @@ public class VkBootstrap {
                                       /*VkQueueFlags*/int undesired_flags) {
         int index = QUEUE_INDEX_MAX_VALUE;
         for (int i = 0; i < (int)(families.size()); i++) {
-            final int families_i_queue_flags = families.get(i).queueFlags();
-            if ((families_i_queue_flags & desired_flags) == desired_flags  && ((families_i_queue_flags & VK_QUEUE_GRAPHICS_BIT) == 0)) {
-                if ((families_i_queue_flags & undesired_flags) == 0) {
+            if ((families.get(i).queueFlags() & desired_flags)!=0 && ((families.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) == 0)) {
+                if ((families.get(i).queueFlags() & undesired_flags) == 0) {
                     return i;
                 } else {
                     index = i;
@@ -535,12 +603,8 @@ public class VkBootstrap {
             /*VkQueueFlags*/int desired_flags,
             /*VkQueueFlags*/int undesired_flags) {
         for (int i = 0; i < (int)(families.size()); i++) {
-            final int families_i_queue_flags = families.get(i).queueFlags();
-            if (
-                    (families_i_queue_flags & desired_flags) == desired_flags
-                            && (families_i_queue_flags & VK_QUEUE_GRAPHICS_BIT) == 0
-                            && (families_i_queue_flags & undesired_flags) == 0
-            )
+            if ((families.get(i).queueFlags() & desired_flags)!=0 && (families.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) == 0 &&
+                    (families.get(i).queueFlags() & undesired_flags) == 0)
                 return i;
         }
         return QUEUE_INDEX_MAX_VALUE;
@@ -627,6 +691,32 @@ public class VkBootstrap {
         // use the first available one if any desired formats aren't found
         return available_formats.get(0);
     }
+    
+
+    public static Result<VkSurfaceFormatKHR> find_desired_surface_format(
+    final List<VkSurfaceFormatKHR> available_formats, final List<VkSurfaceFormatKHR> desired_formats) {
+    for (var desired_format : desired_formats) {
+        for (var available_format : available_formats) {
+            // finds the first format that is desired and available
+            if (desired_format.format() == available_format.format() && desired_format.colorSpace() == available_format.colorSpace()) {
+                return new Result<>(desired_format);
+            }
+        }
+    }
+
+    // if no desired format is available, we report that no format is suitable to the user request
+    return new Result( make_error_code(VkbSurfaceSupportError.no_suitable_desired_format) );
+}
+
+    public static VkSurfaceFormatKHR find_best_surface_format(
+    final List<VkSurfaceFormatKHR> available_formats, final List<VkSurfaceFormatKHR> desired_formats) {
+    var surface_format_ret = find_desired_surface_format(available_formats, desired_formats);
+    if (surface_format_ret.has_value()) return surface_format_ret.value();
+
+    // use the first available format as a fallback if any desired formats aren't found
+    return available_formats.get(0);
+}
+    
 
     /*1574*/ public static /*VkPresentModeKHR*/int find_present_mode(final List</*VkPresentModeKHR*/Integer> available_resent_modes,
                                        final List</*VkPresentModeKHR*/Integer> desired_present_modes) {

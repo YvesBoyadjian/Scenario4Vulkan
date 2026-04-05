@@ -14,10 +14,24 @@ import static vkbootstrap.VkBootstrap.*;
 
 public class VkbDevice {
     public final VkDevice[] device = new VkDevice[1];//VK_NULL_HANDLE;
-    public VkbPhysicalDevice physical_device;
+    public final VkbPhysicalDevice physical_device = new VkbPhysicalDevice();
     public /*VkSurfaceKHR*/long surface = VK_NULL_HANDLE;
     public final List<VkQueueFamilyProperties> queue_families = new ArrayList<>();
     public final VkAllocationCallbacks[] allocation_callbacks = new VkAllocationCallbacks[1];//VK_NULL_HANDLE;
+    VkbVulkanFunctions.PFN_vkGetDeviceProcAddr fp_vkGetDeviceProcAddr = null;
+    int instance_version = Version.VKB_VK_API_VERSION_1_0;
+    
+    class IT {
+    		final VkbVulkanFunctions.PFN_vkGetDeviceQueue[] fp_vkGetDeviceQueue = new VkbVulkanFunctions.PFN_vkGetDeviceQueue[1];
+    		final VkbVulkanFunctions.PFN_vkDestroyDevice[] fp_vkDestroyDevice = new VkbVulkanFunctions.PFN_vkDestroyDevice[1];
+    		
+			public void copyFrom(IT other) {
+				fp_vkGetDeviceQueue[0] = other.fp_vkGetDeviceQueue[0];
+				fp_vkDestroyDevice[0] = other.fp_vkDestroyDevice[0];
+			}
+    }
+    
+    final IT internal_table = new IT();
 
     /*1310*/ public Result<Integer> get_queue_index(VkbQueueType type) {
         int index = QUEUE_INDEX_MAX_VALUE;
@@ -53,4 +67,24 @@ public class VkbDevice {
         if (!index.has_value()) return new Result(index.error());
         return new Result(VkBootstrap.get_queue(device[0], index.value()));
     }
+
+    /**
+     * Copy operator
+     * @param other
+     */
+	public void copyFrom(VkbDevice other) {
+		device[0] = other.device[0];
+		physical_device.copyFrom(other.physical_device);
+		surface = other.surface;
+		queue_families.clear(); queue_families.addAll(other.queue_families);
+		allocation_callbacks[0] = other.allocation_callbacks[0];
+		fp_vkGetDeviceProcAddr = other.fp_vkGetDeviceProcAddr;
+		instance_version = other.instance_version;
+		internal_table.copyFrom(other.internal_table);
+	}
+
+
+	// ---- Dispatch ---- //
+
+	public VkbDispatchTable make_table() { return new VkbDispatchTable( device[0], fp_vkGetDeviceProcAddr ); }
 }

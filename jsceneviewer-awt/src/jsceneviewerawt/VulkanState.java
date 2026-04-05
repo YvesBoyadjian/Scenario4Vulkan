@@ -38,7 +38,7 @@ public class VulkanState {
     }
 
     public void init_VK() {
-        if (0 != Triangle.device_initialization (init)) return;
+        if (0 != Triangle.device_initialization2 (init)) return;
         Triangle.init_allocator(init);
         if (0 != Triangle.create_swapchain (init)) return;
         if (0 != Triangle.get_queues (init, render_data)) return;
