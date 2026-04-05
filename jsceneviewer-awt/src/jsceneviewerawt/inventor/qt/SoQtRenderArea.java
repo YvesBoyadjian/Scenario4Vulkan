@@ -384,8 +384,8 @@ processSoEvent(final SoEvent event)
         super.resizeGL (gl2, width, height);
         soQtSceneHandler.resizeScene(width, height, getGlxDevicePixelRatio());
 
-//		engine._windowExtent.width(width);
-//		engine._windowExtent.height(height);
+		engine._windowExtent.width(width);
+		engine._windowExtent.height(height);
     }
  
     //! overriden from SoQtSceneHandler
