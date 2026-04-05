@@ -373,7 +373,11 @@ operator_equal_equal( SbViewportRegion reg2)
 	SbViewportRegion reg1 = this;
     return (reg1.windowSize.operator_equal_equal(reg2.windowSize) &&
             reg1.vpOrigin.operator_equal_equal(reg2.vpOrigin)   &&
-            reg1.vpSize.operator_equal_equal(reg2.vpSize));
+            reg1.vpOriginPix.operator_equal_equal(reg2.vpOriginPix)   &&
+            reg1.vpSize.operator_equal_equal(reg2.vpSize) &&
+    			reg1.vpSizePix.operator_equal_equal(reg2.vpSizePix) &&
+    			reg1.pixelsPerInch == reg2.pixelsPerInch
+    			);
 }
 
 public boolean operator_not_equal(SbViewportRegion oldvp) {
