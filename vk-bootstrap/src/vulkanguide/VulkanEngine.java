@@ -46,7 +46,7 @@ public class VulkanEngine {
     public int _frameNumber = 0;
     public int _selectedShader = 0;
 
-    public final VkExtent2D _windowExtent = VkExtent2D.create();
+    public /*final*/ VkExtent2D _windowExtent = VkExtent2D.create();
 
     public/*struct SDL_Window**/long _window = /*nullptr*/0;
 
@@ -844,7 +844,7 @@ public class VulkanEngine {
 
 
         //default depthtesting
-        pipelineBuilder._depthStencil = VkInit.depth_stencil_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+        pipelineBuilder._depthStencil = VkInit.depth_stencil_create_info(true, true, /*VK_COMPARE_OP_LESS_OR_EQUAL*/VK_COMPARE_OP_GREATER_OR_EQUAL);
 
         //build the mesh pipeline
 

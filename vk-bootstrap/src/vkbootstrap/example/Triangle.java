@@ -725,6 +725,7 @@ public class Triangle {
             VkOffset2D dummy = VkOffset2D.create();dummy.x( 0); dummy.y( 0);
             VkRect2D area = VkRect2D.create();
             area.offset( dummy);
+            int width = init.swapchain.extent.width();
             area.extent( init.swapchain.extent);
             render_pass_info.renderArea(area);
 //            render_pass_info.renderArea().offset( dummy );
@@ -741,7 +742,7 @@ public class Triangle {
 
         //clear depth at 1
         final VkClearValue depthClear = VkClearValue.create();
-        depthClear.depthStencil().depth ( 1.f);
+        depthClear.depthStencil().depth ( /*1.f*/0f);
         clearValues.put(1, depthClear);
 
             //render_pass_info.clearValueCount( 1); java port
@@ -829,6 +830,10 @@ public class Triangle {
 
         for (var framebuffer : data.framebuffers) {
             init.arrow_operator().vkDestroyFramebuffer.invoke (init.device.device[0], framebuffer, null);
+        }
+        
+        for (var imageData : data.image_datas) {
+        		init.arrow_operator().vkDestroyFramebuffer.invoke(init.device.device[0], imageData.framebuffer, null);
         }
 
         init.swapchain.destroy_image_views (data.swapchain_image_views);
