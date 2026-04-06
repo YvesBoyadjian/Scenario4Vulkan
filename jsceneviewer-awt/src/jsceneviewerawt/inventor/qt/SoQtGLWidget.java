@@ -357,9 +357,12 @@ public /*GLData*/Object format()
 						Rectangle bounds = mainWidget.getBounds();
 
 						AffineTransform at = mainWidget.getGraphicsConfiguration().getDefaultTransform();
+						
+						double scaleX = at.getScaleX();
+						double scaleY = at.getScaleY();
 
-						double w = bounds.width * at.getScaleX();
-						double h = bounds.height * at.getScaleY();
+						double w = bounds.width * scaleX;
+						double h = bounds.height * scaleY;
 
 						float fAspect = (float) w / (float) h;
 						//mainWidget.setCurrent();

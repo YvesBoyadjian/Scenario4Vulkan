@@ -363,7 +363,7 @@ processSoEvent(final SoEvent event)
 
 		//engine.init_allocator();
 
-		engine.init_depth_image();
+//		engine.init_depth_image();
 
 		engine.init_descriptors();
 

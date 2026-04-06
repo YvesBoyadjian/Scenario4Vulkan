@@ -23,6 +23,7 @@ public class VulkanState {
 
     public VulkanState(VulkanEngine engine) {
         render_data.setEngine(engine);
+        engine._windowExtent = init.swapchain.extent;
     }
 
     public void init_vulkan_instance() {
@@ -52,7 +53,10 @@ public class VulkanState {
     }
 
     public void draw_VK(Renderer renderer) {
-        Triangle.draw_frame (init, render_data, cleaner, renderer);
+        int retVal = Triangle.draw_frame (init, render_data, cleaner, renderer);
+        if (retVal != 0) {
+        		System.err.println("error");
+        }
     }
 
     public void cleanup_VK() {
